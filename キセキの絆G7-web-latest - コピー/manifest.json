@@ -1,0 +1,17 @@
+{
+  "name": "お仕事のキセキ Ver.1.0.0",
+  "short_name": "キセキ",
+  "description": "スマホ ⇄ PC リアルタイム同期の業務管理ツール",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#fefce8",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3209/3209265.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

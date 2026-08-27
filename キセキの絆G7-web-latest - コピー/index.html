@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お仕事のキセキ Ver.1.0.0</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f59e0b">
+    <link rel="stylesheet" href="style.css">
+    <script src="kizuna-repository.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // 最新のFirebase構成情報 (kiseki-trial)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDLdJqns5myID4fGv3848EqH7m-2YjuI6Y",
+            authDomain: "kiseki-trial.firebaseapp.com",
+            projectId: "kiseki-trial",
+            storageBucket: "kiseki-trial.firebasestorage.app",
+            messagingSenderId: "536584906374",
+            appId: "1:536584906374:web:2172a118cfd110de661307",
+            databaseURL: "https://kiseki-trial-default-rtdb.firebaseio.com"
+        };
+
+        let db = null;
+        let repo = null;
+        let auth = null;
+
+        const initFirebase = async () => {
+            try {
+                console.log("🚀 Initializing Firebase...");
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // 匿名ログインを実行（セキュリティルールを通すため）
+                console.log("🔐 Signing in anonymously...");
+                await signInAnonymously(auth);
+                console.log("✅ Signed in successfully!");
+
+                // リポジトリの初期化
+                const sdk = { doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, writeBatch };
+                repo = new KizunaRepository(db, sdk);
+                
+                window.firebaseDB = db;
+                window.fbSDK = sdk;
+                window.kizunaRepo = repo;
+                window.firebaseAuth = auth;
+
+                console.log("✨ KizunaRepository Ready.");
+            } catch (e) {
+                console.error("🚨 Firebase Initialization Error:", e);
+                alert("Firebaseの接続に失敗しました。通信環境や設定を確認してください。");
+            }
+        };
+
+        // 初期化実行
+        initFirebase();
+
+        // SDKの準備ができてから初期化（core.jsがまだの場合はリトライ）
+        const startApp = () => {
+            if (typeof initApp === 'function' && window.kizunaRepo) {
+                initApp();
+            } else {
+                setTimeout(startApp, 100);
+            }
+        };
+        startApp();
+    </script>
+</head>
+<body>
+
+<div class="container">
+    <header id="main-header">
+        <!-- 上段：ブランド・ステータス（巨大エンブレム ＆ 時のメッセージ） -->
+        <div id="header-brand" onclick="toggleTimeTravel()">
+            <div id="header-logo-icon"></div>
+            <div id="header-logo-content">
+                <div id="header-logo-line1"></div>
+                <div id="header-logo-line2-row">
+                    <span class="magic-jewel" id="jewel-left"></span>
+                    <span id="header-logo-line2">☆キセキ☆</span>
+                    <span class="magic-jewel" id="jewel-right"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下段：アクション（カレンダー・時計・設定） -->
+        <div id="header-actions">
+            <!-- 魔法の日付セレクタ -->
+            <div class="header-action-item" onclick="document.getElementById('target-date').showPicker()">
+                <svg class="kizuna-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
+                <div id="current-date"></div>
+                <input type="date" id="target-date" onchange="changeDate()" style="position: absolute; opacity: 0; width: 0; height: 0;">
+            </div>
+            <!-- 黄金バランスの時計 -->
+            <div class="header-action-item">
+                <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M5 22h14M5 2h14M17 22c0-8.5-5-10-5-10s-5 1.5-5 10M17 2c0 8.5-5 10-5 10s-5-1.5-5-10"/></svg>
+                <div id="current-time">00:00:00</div>
+            </div>
+            <!-- 同期ステータス -->
+            <div id="sync-status" class="header-action-item" style="background: rgba(255,255,255,0.2); border-radius: 20px; padding: 2px 10px;">
+                <span id="sync-icon">📡</span> <small id="sync-text">接続中...</small>
+            </div>
+            <button class="btn-header-settings" onclick="openPortal()">
+                <svg class="kizuna-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <!-- 【新設】絆の呼びかけ通知 -->
+        <div id="kizuna-notice" class="kizuna-notice-badge" onclick="document.getElementById('kizuna-section').scrollIntoView({behavior:'smooth'})" style="display: none;">
+            <i data-lucide="megaphone" class="pulse-icon"></i>
+            <span>絆の呼びかけがあります！</span>
+        </div>
+
+        <!-- 【移動】キセキの絆（絆の広場） -->
+        <div id="kizuna-section" class="card kizuna-theme-quest" style="margin-bottom: 20px; transition: all 0.3s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; width: 100%;">
+                <h2 style="margin: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap; flex: 1; overflow: hidden;">
+                    <svg class="kizuna-handshake-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px; flex-shrink: 0;">
+                        <!-- 絆を象徴する2つの輪 -->
+                        <circle cx="9" cy="12" r="5" />
+                        <circle cx="15" cy="12" r="5" />
+                        <!-- 結び目 -->
+                        <path d="M12 7v10" />
+                    </svg>
+                    <span style="flex-shrink: 0;">キセキの絆</span>
+                    <svg class="kizuna-echo" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="flex-shrink: 0;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </h2>
+                <button class="btn-small btn-outline" onclick="toggleKizunaFullscreen()" title="司令室モード（拡大）" style="border-color: rgba(0,0,0,0.1); color: inherit; min-width: 35px; padding: 4px; background: rgba(255,255,255,0.5); flex-shrink: 0;">
+                    <!-- キセキの眼（拡大） -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:16px; height:16px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                </button>
+            </div>
+
+            <!-- 【新設】絆のアクション・タイル -->
+            <div class="action-container" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px; gap: 8px;">
+                <button onclick="openQuestModal()" class="action-chip" style="background: #6366f1; min-height: 65px; box-shadow: 0 4px 0 #4338ca;">
+                    <!-- 絆の盾と双剣 -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="margin-bottom:2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 8v8M9 12h6"/></svg>
+                    <span style="font-size: 11px;">キセキの依頼</span>
+                </button>
+                <button onclick="openAnnouncementModal()" class="action-chip" style="background: #f59e0b; min-height: 65px; box-shadow: 0 4px 0 #d97706;">
+                    <!-- キセキの鐘 -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="margin-bottom:2px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0M12 2v2"/></svg>
+                    <span style="font-size: 11px;">キセキのお知らせ</span>
+                </button>
+                <button onclick="openLinkModal()" class="action-chip" style="background: #10b981; min-height: 65px; box-shadow: 0 4px 0 #059669;">
+                    <!-- 無限の結び目 -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="margin-bottom:2px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    <span style="font-size: 11px;">キセキの連携</span>
+                </button>
+            </div>
+
+            <!-- カテゴリータブ -->
+            <div class="kizuna-tabs">
+                <div class="kizuna-tab active" id="tab-quest" onclick="setKizunaTab('quest')">
+                    <span class="new-star" id="new-star-quest">
+                        <svg class="new-star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </span>
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 8v8M9 12h6"/></svg> キセキの依頼 <span id="count-quest" class="tab-badge">0</span>
+                </div>
+                <div class="kizuna-tab" id="tab-ann" onclick="setKizunaTab('ann')">
+                    <span class="new-star" id="new-star-ann">
+                        <svg class="new-star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </span>
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0M12 2v2"/></svg> キセキのお知らせ <span id="count-ann" class="tab-badge">0</span>
+                </div>
+                <div class="kizuna-tab" id="tab-link" onclick="setKizunaTab('link')">
+                    <span class="new-star" id="new-star-link">
+                        <svg class="new-star-icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </span>
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> キセキの連携 <span id="count-link" class="tab-badge">0</span>
+                </div>
+            </div>
+            
+            <div id="kizuna-container" style="display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 10px;">
+                <div id="quests-area" class="kizuna-content-area"></div>
+                <div id="announcements-area" class="kizuna-content-area" style="display: none;"></div>
+                <div id="links-area" class="kizuna-content-area" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- 設定メニュー (ヘッダーボタンで開閉) -->
+        <div id="master-settings" style="display: none; margin-bottom: 20px;">
+            <h2 style="font-size: 14px; margin-bottom: 15px; border-bottom: 2px solid var(--primary); padding-bottom: 5px;">設定メニュー</h2>
+            
+            <div class="settings-header" onclick="toggleSettingsSection('sect-workers')"><span>スタッフリスト</span><!-- 展開する光の翼 -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M6 9l6 6 6-6"/></svg></div>
+            <div id="sect-workers" class="settings-content"><div id="master-workers-list" class="master-list-container"></div><div style="display: flex; gap: 4px;"><input type="text" id="new-worker-id" placeholder="ID" style="flex: 1;"><input type="text" id="new-worker" placeholder="名前" style="flex: 2;"><button class="btn-small" onclick="addMaster('worker')" style="width: 40px;">+</button></div></div>
+
+            <div class="settings-header" onclick="toggleSettingsSection('sect-tasks')"><span>お仕事リスト</span><!-- 展開する光の翼 -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M6 9l6 6 6-6"/></svg></div>
+            <div id="sect-tasks" class="settings-content"><div id="master-tasks-list" class="master-list-container"></div><div style="display: flex; gap: 4px;"><input type="text" id="new-task" placeholder="内容"><button class="btn-small" onclick="addMaster('task')">+</button></div></div>
+
+            <div class="settings-header" onclick="toggleSettingsSection('sect-patterns')"><span>お仕事パターン</span><!-- 展開する光の翼 -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M6 9l6 6 6-6"/></svg></div>
+            <div id="sect-patterns" class="settings-content">
+                <div id="pattern-list" class="master-list-container"></div>
+                <button class="btn-small btn-outline" onclick="openPatternModal(null, true)" style="width:100%; margin-bottom: 15px;">新規パターン</button>
+                
+                <div style="padding-top: 10px; border-top: 1px dashed var(--border);">
+                    <label style="font-weight: bold; font-size: 12px; color: var(--accent);">適用時の自動休憩ルール</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; margin-top: 5px;">
+                        <div style="font-size: 10px; color: var(--text-muted);">しきい値（h以上）</div>
+                        <div style="font-size: 10px; color: var(--text-muted);">休憩時間（分）</div>
+                        <input type="number" id="config-break-threshold" step="0.5" onchange="saveConfig()" style="padding: 4px; font-size: 12px;">
+                        <input type="number" id="config-break-duration" step="15" onchange="saveConfig()" style="padding: 4px; font-size: 12px;">
+                    </div>
+                    <small style="color: var(--text-muted); display: block; margin-top: 4px; font-size: 10px;">※設定時間以上のお仕事に休憩を自動挿入します</small>
+                </div>
+            </div>
+
+            <div class="settings-header" onclick="toggleSettingsSection('sect-config')"><span>環境設定 (グラフ表示)</span><!-- 展開する光の翼 -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M6 9l6 6 6-6"/></svg></div>
+            <div id="sect-config" class="settings-content">
+                <label>表示範囲</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;"><input type="time" id="config-start" onchange="saveConfig()"><input type="time" id="config-end" onchange="saveConfig()"></div>
+            </div>
+
+            <div class="settings-header" onclick="toggleSettingsSection('sect-excel-colors')"><span>配色設定</span><!-- 展開する光の翼 -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M6 9l6 6 6-6"/></svg></div>
+            <div id="sect-excel-colors" class="settings-content">
+                <button class="btn-small btn-success" onclick="syncExcelColors()" style="width: 100%; margin-bottom: 10px;">
+                    <!-- 共鳴の旋律（同期） -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px;"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg> 配色を同期・調整
+                </button>
+                <div id="excel-colors-list" class="master-list-container" style="max-height: 300px; overflow-y: auto; background: white; padding: 4px; border-radius: 8px; border: 1px solid var(--border);">
+                    <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin: 15px 0;">「同期」ボタンを押すと<br>最新のお仕事リストから配色を生成します</p>
+                </div>
+                <small style="color: var(--text-muted); display: block; margin-top: 8px;">※キーワードをクリックして直感的に色を変更できます</small>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- 【移動】アプリの使い方 -->
+            <div class="settings-header" onclick="toggleSettingsSection('sect-guide'); showLargeGuide('guide')">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                    <!-- 叡智の道標 -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px;"><circle cx="12" cy="10" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+                    アプリの使い方
+                </span>
+                <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px; color: var(--primary);"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            </div>
+            <div id="sect-guide" class="settings-content" style="display: none;"></div>
+
+            <!-- 【移動】主要な機能 -->
+            <div class="settings-header" onclick="toggleSettingsSection('sect-features'); showLargeGuide('features')">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                    <!-- 至高の勲章 -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    主要な機能
+                </span>
+                <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px; color: var(--primary);"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            </div>
+            <div id="sect-features" class="settings-content" style="display: none;"></div>
+        </div>
+
+        <!-- お仕事入力カード -->
+        <div class="card" id="input-card">
+            <h2>
+                <!-- キセキを綴る羽ペン -->
+                <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:18px; height:18px; margin-right:4px;"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5zM16 8L2 22M17.5 15H9"/></svg>
+                お仕事入力
+            </h2>
+            <div class="mode-toggle">
+                <button type="button" id="btn-mode-actual" class="active" onclick="setMode('actual')">実績</button>
+                <button type="button" id="btn-mode-plan" onclick="setMode('plan')">予定</button>
+            </div>
+            <form id="task-form">
+                <!-- 🌟 第3工程：【入力革命】ボードレイアウト刷新（洗練の2連ボタン） 🌟 -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <button type="button" onclick="openStaffSelection()" class="action-chip" style="background: #6366f1; height: 80px; color: white; border: none; box-shadow: 0 4px 0 rgba(0,0,0,0.15);">
+                        <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:24px; height:24px; margin-bottom:6px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span id="display-worker" style="font-size: 15px; font-weight: 900;">スタッフを選択 👤</span>
+                    </button>
+                    <button type="button" onclick="openTaskSelection()" class="action-chip" style="background: var(--primary); height: 80px; color: white; border: none; box-shadow: 0 4px 0 rgba(0,0,0,0.15);">
+                        <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:24px; height:24px; margin-bottom:6px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <span id="display-task" style="font-size: 15px; font-weight: 900;">お仕事を選択 📝</span>
+                    </button>
+                </div>
+
+                <!-- 🌟 第4工程：【追跡】結果入力ボタン（独立3段目） 🌟 -->
+                <div style="margin-bottom: 15px;">
+                    <button type="button" id="btn-result-entry" onclick="openResultEntryModal()" class="action-chip" style="background: #94a3b8; height: 60px; width: 100%;">
+                        <i data-lucide="list-checks"></i>
+                        <span>未完了の結果入力 📝</span>
+                    </button>
+                </div>
+
+                <!-- 裏側でデータを保持する隠し入力群 -->
+                <div style="display: none;">
+                    <input type="text" id="worker-id-input" oninput="selectWorkerById()">
+                    <select id="worker-select" required onchange="syncIdFromSelect()"></select>
+                    <button type="button" id="btn-cat-work" onclick="setCategory('work')"></button>
+                    <button type="button" id="btn-cat-special" onclick="setCategory('special')"></button>
+                    <input type="text" id="task-input" list="task-list" oninput="checkSpecialTask()">
+                    <div id="fav-buttons"></div>
+                </div>
+
+                <datalist id="task-list"></datalist>
+
+                <div class="form-group"><label id="target-label">相手先・会議名 (任意)</label><input type="text" id="task-target" placeholder="相手先や件名を記入"></div>
+                <div class="form-group"><label id="remark-label">内容 / 備考 (任意)</label><input type="text" id="task-remark" placeholder="詳しい内容を記入"></div>
+                
+                <!-- 【スマート修正ブロック】 -->
+                <div style="margin-bottom: 12px;">
+                    <div id="time-settings-area" class="form-group" style="display: none; padding: 12px; border-radius: 12px; margin-bottom: 8px;">
+                        <label id="time-label" style="margin-bottom: 8px; display: block;">時刻設定 (開始・終了)</label>
+                        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                            <div style="flex: 1;"><small style="color: var(--text-muted); display: block; margin-bottom: 2px;">開始</small><input type="time" id="start-time" value="08:00" style="width: 100%;"></div>
+                            <div style="font-weight: bold; margin-top: 15px;">〜</div>
+                            <div id="plan-end-group" style="flex: 1;"><small style="color: var(--text-muted); display: block; margin-bottom: 2px;">終了</small><input type="time" id="end-time" style="width: 100%;"></div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
+                            <button type="button" onclick="adjustTime(-30)" class="btn-small btn-outline">-30</button>
+                            <button type="button" onclick="adjustTime(10)" class="btn-small btn-outline">+10</button>
+                            <button type="button" onclick="adjustTime(30)" class="btn-small btn-outline">+30</button>
+                            <button type="button" onclick="adjustTime(60)" class="btn-small btn-outline">+60</button>
+                        </div>
+                    </div>
+                    <button type="button" id="toggle-time-btn" onclick="toggleTimeSettings()" class="btn-small btn-outline" style="width: 100%; border-style: dashed;">
+                        <!-- 運命を整える筆 -->
+                        <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px; margin-right:4px;"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        修正
+                    </button>
+                </div>
+
+                <div id="actual-actions" class="action-container">
+                    <button type="submit" class="action-chip" style="background-color: var(--primary);">
+                        <!-- スマート・一歩目の足跡（アウトライン版） -->
+                        <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:20px; height:20px; margin-bottom:4px; transform: rotate(-15deg);">
+                            <!-- 足の裏 -->
+                            <path d="M12 4c-3.5 0-6 2.5-6 6.5 0 2.5 1 4.5 2 6.5s1 4.5 4 4.5 4-2.5 4-4.5 1-4 2-6.5c0-4-2.5-6.5-6-6.5z" />
+                            <!-- 指先 -->
+                            <circle cx="7" cy="3" r="0.5" fill="currentColor" />
+                            <circle cx="10" cy="2" r="0.5" fill="currentColor" />
+                            <circle cx="13" cy="2" r="0.5" fill="currentColor" />
+                            <circle cx="16" cy="3" r="0.5" fill="currentColor" />
+                            <circle cx="18" cy="5" r="0.5" fill="currentColor" />
+                        </svg>
+                        お仕事開始
+                    </button>
+                    <button type="button" onclick="startBreak()" class="action-chip" style="background-color: #94a3b8;">
+                        <!-- 癒やしの泉 -->
+                        <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>
+                        休憩
+                    </button>
+                    <button type="button" onclick="finishWork()" class="action-chip" style="background-color: var(--accent);">
+                        <!-- 栄光のゲート -->
+                        <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14M9 5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M12 13V9M10 11l2-2 2 2"/></svg>
+                        お仕事終了
+                    </button>
+                    <button type="button" onclick="startTravel()" class="action-chip" style="background-color: #64748b;">
+                        <!-- 絆のコンパス -->
+                        <svg class="kizuna-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12zM12 12l.01-.01"/></svg>
+                        移動
+                    </button>
+                </div>
+
+                <!-- 【移動】今日のキセキ：操作ボタンの「真下」＝一日の終着駅 -->
+                <div id="miracle-action-area" style="margin-top: 15px; display: none; gap: 8px;">
+                    <button type="button" onclick="openMiracleModal(document.getElementById('worker-select').value)" class="btn-miracle-magic" style="color: white; border: none; font-weight: 900; border-radius: 12px; height: 50px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:20px; height:20px;"><path d="M12 3l1.91 5.82L20 10.73l-4.5 4.38 1.06 6.18L12 18.36l-4.56 2.93 1.06-6.18L4 10.73l6.09-1.91L12 3z"/></svg> 私のキセキを刻む
+                    </button>
+                    <button type="button" onclick="openMiracleModal('全体')" class="btn-miracle-team" style="color: white; border: none; font-weight: 900; border-radius: 12px; height: 50px; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:20px; height:20px;"><path d="M6 3h12l4 6-10 12L2 9zM11 3L8 9l10 12M13 3l3 6-10 12"/></svg> チームのキセキを刻む
+                    </button>
+                </div>
+
+                <div id="plan-actions" style="display: none; margin-bottom: 15px;">
+                    <div class="action-container" style="grid-template-columns: 2fr 1fr;">
+                        <button type="submit" class="action-chip" style="background-color: var(--accent);">
+                            <!-- 未来の種植え -->
+                            <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/><line x1="12" y1="18" x2="12" y2="15"/><line x1="10.5" y1="16.5" x2="13.5" y2="16.5"/></svg>
+                            追加
+                        </button>
+                        <button type="button" onclick="togglePatternQuickList()" class="action-chip" style="background-color: #6366f1; position: relative;">
+                            <!-- 連鎖するキセキ -->
+                            <svg class="kizuna-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            パターン
+                            <div id="pattern-quick-list" style="display: none; position: absolute; top: 110%; left: 0; width: 200px; background: white; border: 1px solid var(--border); border-radius: 8px; z-index: 100; padding: 8px; box-shadow: 0 10px 15px rgba(0,0,0,0.1);">
+                                <div id="quick-list-content" style="max-height: 200px; overflow-y: auto;"></div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- 【予実タイムライン】常に表示 -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 style="margin-bottom: 0;">
+                    <!-- 星図の航路（タイムライン） -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:20px; height:20px; margin-right:6px;"><path d="M3 3v18h18M7 16l4-4 4 4 6-6"/></svg>
+                    描いた未来と、キセキの足跡
+                    <svg class="kizuna-echo" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </h2>
+                <div style="display: flex; gap: 4px; background: #f1f5f9; padding: 2px; border-radius: 8px;">
+                    <button class="btn-small btn-outline" onclick="setChartRange('00:00', '00:00')" style="border:none; background:white;"><i data-lucide="clock" style="width:12px; margin-right:2px;"></i> 24h</button>
+                    <button class="btn-small btn-success" onclick="autoFitChart()">Fit</button>
+                    <div style="width: 1px; background: #e2e8f0; margin: 2px 4px;"></div>
+                    <button class="btn-small btn-outline" id="btn-gantt-all" onclick="setGanttViewMode('all')" style="border:none; background:white;">全て</button>
+                    <button class="btn-small btn-outline" id="btn-gantt-actual" onclick="setGanttViewMode('actual')" style="border:none; background:transparent;">足跡</button>
+                </div>
+            </div>
+            <div class="gantt-container"><canvas id="ganttChart"></canvas></div>
+            <div class="export-actions">
+                <button onclick="exportGanttImage()" class="btn-outline btn-small" style="width:auto;">
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px; margin-right:5px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    画像保存
+                </button>
+            </div>
+        </div>
+
+        <!-- 表示切り替えボタン (Unified Tile UI) -->
+        <div class="action-container">
+            <button type="button" onclick="toggleMainSection('analysis-section')" id="btn-show-analysis" class="action-chip" style="background: var(--primary);">
+                <div style="display: flex; gap: 4px; align-items: center; justify-content: center;">
+                    <!-- 真実を見通す望遠鏡 -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M10 13l3 3 7-7-3-3zM14 7l3 3M2 21l5.45-5.45M11 21l3-3M17 21l2-2"/></svg>
+                    <i data-lucide="sparkles"></i>
+                </div>
+                キセキの観測
+            </button>
+            <button type="button" onclick="toggleMainSection('history-section')" id="btn-show-history" class="action-chip" style="background: var(--accent);">
+                <!-- 光り輝く歩み -->
+                <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M4 16c0-3 2-5 2-5s2 2 2 5-2 5-2 5-2-2-2-5zM16 8c0-3 2-5 2-5s2 2 2 5-2 5-2 5-2-2-2-5zM10 12c0-3 2-5 2-5s2 2 2 5-2 5-2 5-2-2-2-5z"/></svg>
+                足跡
+            </button>
+        </div>
+
+        <!-- 【分析セクション】 -->
+        <div id="analysis-section" style="display: none;">
+            <div class="action-container" style="grid-template-columns: repeat(2, 1fr);">
+                <button onclick="openDailyReportModal()" class="action-chip" style="background: #22c55e;">
+                    <!-- 黄金の記録書 -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                    日報作成
+                </button>
+                <button onclick="openRatioModal()" class="action-chip" style="background: var(--primary);">
+                    <!-- 運命の円環 -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                    割合分析
+                </button>
+                <button onclick="openWeeklyReportModal()" class="action-chip" style="background: var(--success);">
+                    <!-- 叡智の巻物 -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5V4.5z"/></svg>
+                    週報作成
+                </button>
+                <button onclick="openDashboardModal()" class="action-chip" style="background: var(--accent);">
+                    <!-- 積層するキセキ -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    期間集計
+                </button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card"><div>実績時間</div><div id="stat-actual" class="stat-value">0h</div></div>
+                <div class="stat-card"><div>予定時間</div><div id="stat-plan" class="stat-value">0h</div></div>
+                <div class="stat-card"><div>ズレ</div><div id="stat-diff" class="stat-value">0h</div></div>
+            </div>
+        </div>
+
+        <div id="history-section" style="display: none;">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0;">
+                        <!-- 歴史の羊皮紙 -->
+                        <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:20px; height:20px; margin-right:6px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5V4.5z"/></svg>
+                        足跡
+                    </h2>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <select id="history-worker-select" onchange="document.getElementById('history-search').value = (this.value === 'all' ? '' : this.value.replace(/ \[.*?\]$/, '')); renderUI();" style="padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); font-size: 13px; background: #f8fafc; cursor: pointer; color: var(--text-main);">
+                            <option value="all">👥 全員</option>
+                        </select>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <!-- 叡智の虫眼鏡 -->
+                            <svg class="kizuna-icon" viewBox="0 0 24 24" style="position: absolute; left: 10px; width: 14px; height: 14px; color: var(--text-muted);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="history-search" placeholder="または直接入力..." oninput="document.getElementById('history-worker-select').value = 'all'; renderUI()" style="padding: 6px 12px 6px 32px; border-radius: 20px; border: 1px solid var(--border); font-size: 13px; width: 140px; background: #f8fafc;">
+                        </div>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>種別</th><th>スタッフ</th><th>内容</th><th>時間帯</th><th>所要</th><th></th></tr>
+                    </thead>
+                    <tbody id="task-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 今日のキセキバッジエリア（分析・履歴の下に配置） -->
+        <div id="miracle-badge-container" style="margin-bottom: 15px; display: none;">
+            <div id="team-miracle-area"></div>
+            <div id="staff-miracles-area" style="margin-top: 8px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 魔法のトースト通知 -->
+<div id="toast" class="toast"></div>
+
+<!-- ポヨンと戻るボタン -->
+<button id="back-to-top" onclick="window.scrollTo({top:0, behavior:'smooth'})" class="back-to-top">
+    <i data-lucide="chevron-up"></i>
+</button>
+
+<!-- Modals -->
+<div id="daily-report-modal" class="modal"><div class="modal-content" style="max-width: 400px;"><span class="close-modal" onclick="closeDailyReportModal()"><!-- 封印の刻印（閉じる） -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:18px; height:18px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span><h2>作業日報の召喚</h2><div class="card" style="background: #f8fafc; margin-bottom: 20px; text-align: center;"><i data-lucide="file-spreadsheet" style="width:48px; height:48px; color:var(--success); margin-bottom:10px;"></i><p style="font-size: 13px; color: var(--text-muted);">社長提出用フォーマットで日報を生成します。</p></div><div class="form-group"><label>所属 (部署名など)</label><input type="text" id="daily-report-affiliation" placeholder="例: 開発推進部" style="height: 45px; margin-bottom: 10px;"></div><div class="form-group"><label>対象のスタッフを選択</label><select id="daily-report-worker-select" style="font-weight: bold; height: 50px; border: 2px solid var(--border);"></select></div><button onclick="exportDailyReportExcel()" class="btn-success" style="width: 100%; height: 55px; font-weight: 900; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 0 #15803d;">
+    <!-- 召喚の魔陣 -->
+    <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:20px; height:20px; margin-right:8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    Excelを出力する
+</button></div></div>
+<div id="ratio-modal" class="modal"><div class="modal-content"><span class="close-modal" onclick="closeRatioModal()"><!-- 封印の刻印（閉じる） -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:18px; height:18px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span><h2>お仕事割合分析</h2><div class="form-group"><label>スタッフを選択</label><select id="analysis-worker-select" onchange="updateRatioChart()"></select></div><div class="chart-flex"><div id="ratioChartContainer"><canvas id="ratioChart"></canvas></div><div id="ratio-summary" style="flex: 1; min-width: 200px;"></div></div><button onclick="exportRatioImage()" class="btn-outline btn-small" style="margin-top:15px; width:auto;">
+    <!-- 記憶の欠片（画像） -->
+    <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px; margin-right:4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    画像保存
+</button></div></div>
+<div id="dashboard-modal" class="modal"><div class="modal-content" style="max-width: 900px;"><span class="close-modal" onclick="closeDashboardModal()"><!-- 封印の刻印（閉じる） -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:18px; height:18px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span><h2>期間集計ダッシュボード</h2><div class="card" style="background: #f8fafc; margin-bottom: 20px;"><div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;"><input type="date" id="dash-start" onchange="updateDashboard()">〜<input type="date" id="dash-end" onchange="updateDashboard()"><select id="dash-worker-select" onchange="updateDashboard()"></select><button type="button" class="btn-small btn-outline" onclick="setDashPeriod('week')">今週</button><button type="button" class="btn-small btn-outline" onclick="setDashPeriod('month')">今月</button>
+                    <button type="button" class="btn-small btn-outline" onclick="exportDashboardImage()" style="margin-left:auto; border-color:var(--accent); color:var(--accent);">
+                        <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px; margin-right:4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        画像保存
+                    </button>
+                </div></div><div class="stats-grid"><div class="stat-card">稼働日数<div id="dash-days" class="stat-value">0</div></div><div class="stat-card">実績合計<div id="dash-total-actual" class="stat-value">0h</div></div><div class="stat-card">平均/日<div id="dash-avg-actual" class="stat-value">0h</div></div><div class="stat-card">予定合計<div id="dash-total-plan" class="stat-value">0h</div></div><div class="stat-card">差異合計<div id="dash-diff-total" class="stat-value">0h</div></div><div class="stat-card">計画一致率<div id="dash-plan-accuracy" class="stat-value">0%</div></div></div><div style="margin-top: 20px; display: grid; grid-template-columns: 1fr; gap: 15px;"><div class="card"><div style="height: 180px;"><canvas id="dashTrendChart"></canvas></div></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"><div class="card" style="max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 8px;"><div id="dash-staff-summary"></div></div><div class="card"><div style="height: 150px;"><canvas id="dashRatioChart"></canvas></div></div></div></div></div></div>
+<div id="pattern-modal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <h2 style="margin: 0; font-weight: 900; color: var(--primary);">パターンの編集</h2>
+            <button type="button" class="btn-small btn-outline" onclick="closePatternModal()" style="width: auto; height: 38px; padding: 0 15px; border-radius: 12px; border-style: dashed; display: flex; align-items: center; gap: 6px;">
+                戻る <i data-lucide="chevron-right" style="width:16px;"></i>
+            </button>
+        </div>
+        <div class="form-group"><label>名前</label><input type="text" id="edit-pattern-name" placeholder="例: 通常日勤、会議集中日など"></div>
+            <!-- 【追加】パターンの編集ヘッダー -->
+            <div id="pattern-edit-header" style="display:flex; gap:4px; margin-bottom:8px; padding:0 2px; border-bottom: 2px solid var(--border);">
+                <label style="flex:1; text-align:center; margin-bottom:4px; color:var(--primary); font-size:13px;">開始</label>
+                <label style="flex:1; text-align:center; margin-bottom:4px; color:var(--primary); font-size:13px;">終了</label>
+                <label style="flex:2; text-align:center; margin-bottom:4px; color:var(--primary); font-size:13px;">お仕事内容</label>
+                <div style="width:32px;"></div>
+            </div>
+            <div id="pattern-steps-container"></div><button type="button" class="btn-small btn-outline" onclick="addPatternStep()" style="width:100%; margin-top:10px;">+ 追加</button><button onclick="savePattern()" style="background: var(--success); color:white; margin-top:15px; padding:10px; width:100%; font-weight:bold; border-radius:8px;">保存</button></div></div>
+<div id="weekly-report-modal" class="modal"><div class="modal-content" style="max-width: 700px;"><span class="close-modal" onclick="closeWeeklyReportModal()"><!-- 封印の刻印（閉じる） -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:18px; height:18px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span><h2>業務報告サマリー</h2><div class="card" style="background: #f8fafc; margin-bottom: 20px;"><div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;"><input type="date" id="report-start">〜<input type="date" id="report-end"><select id="report-worker-select"></select><button type="button" class="btn-small btn-outline" onclick="setReportPeriod('week')">今週</button><button type="button" class="btn-success" onclick="generateWeeklyReport()" style="width: auto; margin-left: auto; height: 38px; padding: 0 20px; font-weight: 800; box-shadow: 0 4px 0 #15803d;">生成</button></div></div><textarea id="report-text" style="width: 100%; height: 250px; padding: 15px; border-radius: 12px; border: 1px solid var(--border); font-family: monospace; background: #fffbeb;" readonly></textarea>
+<div style="display: flex; gap: 8px; margin-top: 15px;">
+    <button onclick="copyWeeklyReport()" class="btn-success" style="flex: 1;"><i data-lucide="copy"></i> コピー</button>
+    <button onclick="exportCompanyExcel()" class="btn-outline" style="flex: 1; border-color: #16a34a; color: #16a34a;"><i data-lucide="file-spreadsheet"></i> 予定・実績Excel</button>
+</div></div></div>
+
+<div id="miracle-modal" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <span class="close-modal" onclick="closeMiracleModal()"><!-- 封印の刻印（閉じる） -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:18px; height:18px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+        <div style="font-size: 40px; margin-bottom: 10px;">✨</div>
+        <h2 style="justify-content: center; margin-bottom: 5px;">今日のキセキ</h2>
+        
+        <div class="form-group" style="margin-top: 15px; text-align: left;">
+            <label>キセキを刻む人</label>
+            <select id="miracle-worker-select" style="font-weight: bold; height: 50px; border: 2px solid var(--border);" onchange="loadMiracleForSelectedWorker()"></select>
+        </div>
+
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">今日一日の頑張りを星で称えよう！</p>
+        
+        <div class="miracle-stars" id="star-container">
+            <span onclick="setMiracleRating(1)">★</span>
+            <span onclick="setMiracleRating(2)">★</span>
+            <span onclick="setMiracleRating(3)">★</span>
+            <span onclick="setMiracleRating(4)">★</span>
+            <span onclick="setMiracleRating(5)">★</span>
+        </div>
+        
+        <div id="miracle-comment-area" style="display: none; animation: fadeIn 0.3s ease;">
+            <textarea id="miracle-comment-input" class="miracle-comment" placeholder="今日一日の歩みを記録に残しましょう..." rows="3"></textarea>
+
+            <button onclick="saveMiracle()" style="margin-top: 20px; background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);">
+                キセキを刻む
+            </button>
+        </div>
+            <div id="miracle-delete-area" style="margin-top: 15px; display: none;">
+                <button onclick="deleteMiracleFromModal()" class="btn-small btn-outline" style="width: 100%; border-color: #bae6fd; color: #0ea5e9; background: #f0f9ff; border-style: dashed;">
+                    <!-- 昇天の雲 -->
+                    <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:14px; height:14px; margin-right:4px; color:#0ea5e9;"><path d="M17.5 19a5.5 5.5 0 0 0 2.5-10.5 8.5 8.5 0 1 0-15.5 1.5A4.5 4.5 0 0 0 5 19z"/></svg>
+                    キセキを空へ還す
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 【新設】全画面おもてなしガイド -->
+<div id="large-guide-modal" class="modal">
+    <div class="modal-content" style="max-width: 600px; padding: 30px; border-radius: 20px;">
+        <span class="close-modal" onclick="closeLargeGuide()"><!-- 封印の刻印（閉じる） -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:18px; height:18px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+        <div id="guide-icon-area" style="font-size: 50px; margin-bottom: 10px;">
+            <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:60px; height:60px; color:var(--primary); margin: 0 auto;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <h2 id="guide-title" style="font-size: 24px; font-weight: 900; color: var(--primary); justify-content: center; margin-bottom: 20px;">ガイド</h2>
+        <div id="guide-content" style="text-align: left; font-size: 16px; line-height: 1.8; color: var(--text-main); background: #fefce8; padding: 20px; border-radius: 15px; border: 1px solid #fde68a;">
+            <!-- ここに内容が魔法のように流し込まれます -->
+        </div>
+        <button onclick="closeLargeGuide()" style="margin-top: 25px; background: var(--primary); font-weight: bold; border-radius: 12px; height: 50px;">
+            了解しました
+        </button>
+    </div>
+</div>
+
+<!-- 【新設】絆のモーダル群 -->
+<div id="announcement-modal" class="modal">
+    <div class="modal-content" style="max-width: 450px;">
+        <span class="close-modal" onclick="closeAnnouncementModal()"><!-- 封印の刻印（閉じる） -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:18px; height:18px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+        <h2 id="ann-modal-title">明日を照らす希望の灯 ―― キセキのお知らせ</h2>
+        <div class="form-group"><label>メッセージ内容</label><textarea id="ann-content" placeholder="みんなに伝えたいことを書いてね！" rows="4" style="width:100%; border-radius:12px; padding:12px; border:1px solid var(--border);"></textarea></div>
+        <div class="form-group">
+            <label>表示期限 (任意：期限まで掲示されます)</label>
+            <input type="date" id="ann-expiry" style="height: 45px;">
+        </div>
+        <div class="form-group">
+            <label>資料のURL (Googleドライブ / 共有リンク等)</label>
+            <input type="url" id="ann-link" placeholder="https://drive.google.com/...">
+        </div>
+        <div class="form-group">
+            <label>公式資料を添える (ファイル名のみ記録)</label>
+            <div id="ann-drop-zone" class="file-drop-zone">
+                <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:32px; height:32px; margin-bottom:8px; color:var(--text-muted);"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0M12 2v2"/></svg>
+                <p style="margin:0; font-size:12px; font-weight:bold; color:var(--text-muted);">公式資料をドロップ！</p>
+                <input type="file" id="ann-file" style="display:none;">
+                <div id="selected-ann-files-preview" style="margin-top:10px; width:100%;"></div>
+            </div>
+        </div>
+        <button onclick="saveAnnouncement()" style="background: var(--primary); width:100%; margin-top:10px;">告知を飛ばす</button>
+        <!-- 【新設】モーダル内リスト -->
+        <div id="modal-ann-list" style="margin-top: 20px; border-top: 2px dashed var(--border); padding-top: 15px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<div id="quest-modal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <span class="close-modal" onclick="closeQuestModal()"><!-- 封印の刻印（閉じる） -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:18px; height:18px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+        <h2>想いを託す信頼の証 ―― キセキの依頼</h2>
+        <div class="form-group"><label>クエスト名（タイトル）</label><input type="text" id="quest-title" placeholder="例: 資料の確認をお願い！"></div>
+        <div class="form-group"><label>内容 / リンク / 共有事項</label><textarea id="quest-content" placeholder="具体的な依頼内容や共有したいURLを書いてね！" rows="3" style="width:100%; border-radius:12px; padding:12px; border:1px solid var(--border);"></textarea></div>
+        <div class="form-group">
+            <label>担当スタッフを指名 (任意)</label>
+            <select id="quest-worker-select" style="font-weight: bold; height: 50px; border: 2px solid var(--border);"></select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+            <div class="form-group">
+                <label>任務期限 (任意)</label>
+                <input type="date" id="quest-expiry" style="height: 45px;">
+            </div>
+            <div class="form-group">
+                <label>優先度設定</label>
+                <label style="display: flex; align-items: center; gap: 8px; background: #fff1f2; padding: 10px; border-radius: 10px; border: 1px solid #fecdd3; cursor: pointer; height: 45px; margin: 0;">
+                    <input type="checkbox" id="quest-important" style="width: auto; margin: 0;">
+                    <span style="font-size: 13px; font-weight: bold; color: #e11d48;">最優先任務</span>
+                </label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>資料のURL (Googleドライブ / 共有リンク等)</label>
+            <input type="url" id="quest-link" placeholder="https://drive.google.com/...">
+        </div>
+        <div class="form-group">
+            <label>資料の共有 (PDF/Excel等/ファイル名のみ記録)</label>
+            <div id="quest-drop-zone" class="file-drop-zone">
+                <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:32px; height:32px; margin-bottom:8px; color:var(--text-muted);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                <p style="margin:0; font-size:12px; font-weight:bold; color:var(--text-muted);">ファイルをここにドロップ！</p>
+                <p style="margin:4px 0 0; font-size:10px; color:var(--text-muted);">(またはクリックして選択)</p>
+                <input type="file" id="quest-file" style="display:none;" multiple>
+                <div id="selected-files-preview" style="margin-top:10px; width:100%;"></div>
+            </div>
+        </div>
+        <button onclick="saveQuest()" style="background: var(--accent); width:100%; margin-top:10px;">クエストを発令</button>
+        <!-- 【新設】モーダル内リスト -->
+        <div id="modal-quest-list" style="margin-top: 20px; border-top: 2px dashed var(--border); padding-top: 15px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<div id="link-modal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <span class="close-modal" onclick="closeLinkModal()"><!-- 封印の刻印（閉じる） -->
+<svg class="kizuna-icon" viewBox="0 0 24 24" style="width:18px; height:18px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+        <h2>世界を広げる架け橋 ―― キセキの連携</h2>
+        <div class="form-group"><label>タイトル (表示名)</label><input type="text" id="link-title" placeholder="例: 社内掲示板、マニュアル等"></div>
+        <div class="form-group"><label>URL (任意)</label><input type="url" id="link-url" placeholder="https://..."></div>
+        
+        <div class="form-group">
+            <label>アイコンを選択</label>
+            <div id="link-icon-selector" style="display: flex; gap: 8px; flex-wrap: wrap; background: #f8fafc; padding: 10px; border-radius: 12px; border: 1px solid var(--border);">
+                <button class="icon-sel-btn active" onclick="selectLinkIcon('external-link')" data-icon="external-link">
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                </button>
+                <button class="icon-sel-btn" onclick="selectLinkIcon('message-square')" data-icon="message-square">
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </button>
+                <button class="icon-sel-btn" onclick="selectLinkIcon('calendar')" data-icon="calendar">
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </button>
+                <button class="icon-sel-btn" onclick="selectLinkIcon('book-open')" data-icon="book-open">
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                </button>
+                <button class="icon-sel-btn" onclick="selectLinkIcon('bar-chart-2')" data-icon="bar-chart-2">
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </button>
+                <button class="icon-sel-btn" onclick="selectLinkIcon('briefcase')" data-icon="briefcase">
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                </button>
+                <button class="icon-sel-btn" onclick="selectLinkIcon('home')" data-icon="home">
+                    <svg class="kizuna-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>公式資料を添える (ファイル名のみ記録)</label>
+            <div id="link-drop-zone" class="file-drop-zone">
+                <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:32px; height:32px; margin-bottom:8px; color:var(--text-muted);"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0M12 2v2"/></svg>
+                <p style="margin:0; font-size:12px; font-weight:bold; color:var(--text-muted);">公式資料をドロップ！</p>
+                <input type="file" id="link-file" style="display:none;">
+                <div id="selected-link-files-preview" style="margin-top:10px; width:100%;"></div>
+            </div>
+        </div>
+
+        <button onclick="saveLink()" style="background: var(--success); width:100%; margin-top:10px;">連携を繋ぐ</button>
+        <!-- 【新設】モーダル内リスト -->
+        <div id="modal-link-list" style="margin-top: 20px; border-top: 2px dashed var(--border); padding-top: 15px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<script src="miracle-particles.js"></script>
+<script src="kizuna-resonance.js"></script>
+<script src="tactile-ui.js"></script>
+<script src="core.js"></script>
+
+<script src="actions.js"></script>
+<script src="analysis.js"></script>
+</body>
+</html>

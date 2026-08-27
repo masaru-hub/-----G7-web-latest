@@ -1,0 +1,1699 @@
+:root {
+    --primary: #f59e0b;
+    --primary-hover: #d97706;
+    --bg: #fefce8;
+    --card-bg: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --accent: #0ea5e9;
+    --success: #10b981;
+    --danger: #ef4444;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+body { background-color: var(--bg); color: var(--text-main); padding-bottom: 60px; }
+.container { 
+    max-width: 1200px; 
+    margin: 0 auto; 
+    padding: 20px; 
+    display: grid; 
+    grid-template-columns: 350px 1fr; 
+    gap: 24px; 
+}
+
+/* 統合ヘッダー：プレミアム2段構成 */
+header { 
+    grid-column: 1 / -1; 
+    color: white; 
+    padding: 15px 25px; 
+    display: flex; 
+    flex-direction: column; /* 上下2段 */
+    gap: 12px; 
+    margin-bottom: 15px; 
+    border-radius: 24px; 
+    position: relative; 
+    transition: all 1s ease-in-out;
+}
+
+/* 上段：巨大エンブレム & ブランドロゴ */
+#header-brand {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    cursor: pointer;
+    user-select: none;
+    width: 100%;
+}
+
+#header-logo-icon svg {
+    width: 75px !important; /* エンブレム巨大化 */
+    height: 75px !important;
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
+}
+
+#header-logo-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#header-logo-line1 {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    opacity: 0.9;
+}
+
+#header-logo-line2-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#header-logo-line2 {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+/* 下段：アクションボタン一列 */
+#header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+}
+
+.header-action-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(4px);
+    padding: 10px 15px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.25);
+    cursor: pointer;
+    font-weight: 800;
+    flex: 1; 
+    justify-content: center;
+}
+
+#current-date { font-size: 14px; white-space: nowrap; }
+#current-time { font-size: 16px; letter-spacing: 1px; }
+
+/* === スマホ最適化：プレミアム・レスポンシブ === */
+@media (max-width: 900px) { 
+    .container { grid-template-columns: 1fr; padding: 15px; } 
+}
+
+@media (max-width: 768px) {
+    header { 
+        padding: 15px; 
+        border-radius: 20px; 
+        gap: 15px; 
+        margin-bottom: 15px; /* マージンをリセット */
+    }
+    #header-brand { gap: 12px; }
+    #header-logo-icon svg { width: 65px !important; height: 65px !important; }
+    #header-logo-line2 { font-size: 24px; }
+    #header-logo-line1 { font-size: 11px; }
+    
+    #header-actions { gap: 6px; }
+    .header-action-item { padding: 8px 4px; border-radius: 10px; }
+    #current-date { font-size: 12px; }
+    #current-time { font-size: 14px; }
+    .btn-header-settings { width: 40px; height: 40px; }
+}
+
+/* デフォルト（または初期状態）の背景 */
+header:not(.header-morning):not(.header-day):not(.header-evening):not(.header-night) {
+    background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+/* 🌅 朝：爽やかなミント＆スカイ (5-10時) */
+header.header-morning {
+    background: linear-gradient(135deg, #065f46 0%, #10b981 50%, #34d399 100%);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+/* ☀️ 昼：輝くスカイ＆ゴールド (10-16時) */
+header.header-day {
+    background: linear-gradient(135deg, #0369a1 0%, #0ea5e9 50%, #38bdf8 100%);
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+}
+
+/* 🌆 夕：燃えるオレンジ＆パープル (16-19時) */
+header.header-evening {
+    background: linear-gradient(135deg, #92400e 0%, #f59e0b 50%, #fbbf24 100%);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+/* 🌙 夜：静かなネイビー＆ミッドナイト (19-5時) */
+header.header-night {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+    box-shadow: 0 4px 20px rgba(30, 27, 75, 0.5);
+}
+
+.card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px; transition: all 0.4s ease; }
+
+/* モード別オーラ（魔法の色） */
+.aura-actual {
+    background-color: #fff9eb !important;
+    border: 2px solid var(--primary) !important;
+    box-shadow: 0 8px 30px rgba(245, 158, 11, 0.2) !important;
+}
+.aura-plan {
+    background-color: #f0f9ff !important;
+    border: 2px solid var(--accent) !important;
+    box-shadow: 0 8px 30px rgba(14, 165, 233, 0.2) !important;
+}
+/* 予定モード時の文字色・フォーム調整 */
+.aura-plan h2, .aura-plan .mode-toggle button.active, .aura-plan label {
+    color: #0369a1 !important;
+}
+.aura-plan input, .aura-plan select, .aura-plan textarea {
+    border-color: #bae6fd !important;
+}
+.aura-plan input:focus, .aura-plan select:focus, .aura-plan textarea:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1) !important;
+}
+
+/* 時刻設定エリア（#time-settings-area）のモード別配色 */
+.aura-actual #time-settings-area {
+    background: #fffbeb !important;
+    border: 1px solid #fde68a !important;
+}
+.aura-plan #time-settings-area {
+    background: #f0f9ff !important;
+    border: 1px solid #bae6fd !important;
+}
+
+h2 { font-size: 16px; margin-bottom: 15px; display: flex; align-items: center; gap: 6px; }
+h2 svg, h2 i { flex-shrink: 0; } /* アイコンが潰れないように */
+.form-group { margin-bottom: 12px; }
+label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 4px; color: var(--text-muted); }
+input, select, textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; outline: none; transition: all 0.2s; }
+button { width: 100%; padding: 10px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; transition: opacity 0.1s; }
+button:active { opacity: 0.7; transform: scale(0.98); }
+.btn-small { padding: 4px 8px; font-size: 11px; width: auto; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+.btn-success { background-color: var(--success); color: white; }
+/* ヘッダーの設定ボタン */
+.btn-header-settings { 
+    background: rgba(255, 255, 255, 0.2); 
+    color: white; 
+    border: 1px solid rgba(255, 255, 255, 0.3); 
+    width: 36px; 
+    height: 36px; 
+    padding: 0;
+    border-radius: 10px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.btn-header-settings:hover { 
+    background: rgba(255, 255, 255, 0.3); 
+    transform: rotate(30deg); /* 遊び心で少し回す */
+}
+.mode-toggle { display: flex; background: #f1f5f9; padding: 3px; border-radius: 10px; margin-bottom: 15px; }
+.mode-toggle button { flex: 1; padding: 6px; background: transparent; color: var(--text-muted); border-radius: 7px; font-size: 12px; }
+.mode-toggle button.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: white; padding: 12px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
+.stat-value { font-size: 20px; font-weight: 800; color: var(--primary); }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); font-size: 12px; }
+.badge { padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
+.gantt-container { 
+    height: 450px; 
+    width: 100%; 
+    background: #fffdfa; /* 【微調整】さらに薄く白に近いアイボリー */
+    padding: 10px; 
+    border-radius: 16px; 
+    border: 1px solid rgba(217, 119, 6, 0.08); /* 境界もさらに淡く */
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.01); 
+    position: relative; /* 🌟 絆レイヤーの基準点 */
+}
+#master-settings { display: none; padding: 15px; background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; }
+.settings-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 10px 0; font-weight: bold; font-size: 13px; color: var(--text-main); border-bottom: 1px solid var(--border); }
+.settings-header:hover { color: var(--primary); }
+.settings-content { padding: 12px 0; display: none; }
+.master-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #fff; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 4px; font-size: 12px; }
+.master-list-container { max-height: 150px; overflow-y: auto; margin-bottom: 8px; }
+.section-divider { height: 1px; background: var(--border); margin: 15px 0; }
+.helper-buttons { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+/* お気に入りボタン専用のコンテナ（スマホでも押しやすい2列） */
+.fav-container { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 8px; 
+    margin: 10px 0;
+}
+/* お気に入りボタン本体（タイル状） */
+.fav-chip { 
+    width: 100%; 
+    min-height: 54px; /* 親指で押しやすい高さ */
+    padding: 10px 8px; 
+    border-radius: 12px; 
+    border: 1px solid rgba(0,0,0,0.05); /* 薄い境界線 */
+    font-size: 14px; 
+    font-weight: 800; 
+    color: #1e293b; /* 【変更】白から黒へ */
+    cursor: pointer;
+    text-shadow: none; /* 影を消してモダンに */
+    box-shadow: 0 4px 0px rgba(0,0,0,0.1); /* 立体感 */
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    text-align: center;
+    transition: transform 0.05s, box-shadow 0.05s;
+    line-height: 1.2;
+}
+.fav-chip:active { 
+    transform: translateY(3px); /* 押した時に沈む */
+    box-shadow: 0 1px 0px rgba(0,0,0,0.1); 
+}
+/* 操作ボタン（開始、移動、休憩、終業）用のタイルデザイン */
+.action-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+.action-chip {
+    width: 100%;
+    min-height: 54px;
+    padding: 10px 8px;
+    border-radius: 12px;
+    border: none;
+    font-size: 14px;
+    font-weight: 800;
+    color: white;
+    cursor: pointer;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column; /* アイコンと文字を縦に並べる */
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.2;
+
+    /* 🌟 【Ver.2.0.0】 3D物理構造の定義 */
+    position: relative;
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1); /* 鋭い反応速度 */
+    outline: none;
+    
+    /* 3Dの厚みを表現するシャドウ（下側に濃い影を配置） */
+    box-shadow: 
+        0 4px 0 0 rgba(0, 0, 0, 0.2), /* 底面の厚み */
+        0 8px 15px rgba(0, 0, 0, 0.1); /* 床への落ち影 */
+    
+    /* 内部のわずかな光沢 */
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.1) 100%);
+}
+.action-chip i { width: 18px; height: 18px; margin-bottom: 4px; }
+
+/* ホバー時：わずかに浮き上がる */
+.action-chip:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 0 0 rgba(0, 0, 0, 0.2), 
+        0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* アクティブ時：物理的に沈み込む */
+.action-chip:active {
+    transform: translateY(4px) translateX(1px); /* 右下へ沈む */
+    box-shadow: 
+        0 0px 0 0 rgba(0, 0, 0, 0.2), /* 厚みが消える */
+        0 2px 5px rgba(0, 0, 0, 0.2);  /* 影が凝縮される */
+    transition: all 0.05s; /* 沈み込みは瞬時に */
+}
+
+/* キセキの通知（クリスタル・カプセル） */
+.toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    color: var(--text-main);
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 14px;
+    z-index: 10000;
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.4);
+    min-width: 280px;
+    border-left: 6px solid var(--primary); /* デフォルト：黄金 */
+    pointer-events: none;
+}
+
+/* 色彩の共鳴：ダイナミック・アクセント */
+.toast.toast-success { border-left-color: var(--success); }
+.toast.toast-warning { border-left-color: var(--danger); }
+.toast.toast-info { border-left-color: var(--accent); }
+.toast.toast-miracle { border-left-color: #8b5cf6; } /* 特別なキセキ色：パープル */
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.toast span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+/* トースト通知の出現アニメーション */
+@keyframes toast-pop {
+    0% { transform: translateX(-50%) translateY(20px); opacity: 0; }
+    50% { transform: translateX(-50%) translateY(-10px); }
+    100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+/* ポヨンと戻るボタン */
+.back-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    cursor: pointer;
+    border: none;
+    z-index: 999;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.back-to-top.show {
+    opacity: 1;
+    transform: scale(1);
+}
+.back-to-top:hover {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* 星のきらめきアニメーション */
+@keyframes star-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.5) rotate(15deg); }
+    100% { transform: scale(1); }
+}
+.star-pop {
+    animation: star-pop 0.3s ease-out;
+}
+
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+.modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; position: relative; }
+.close-modal { position: absolute; top: 20px; right: 20px; cursor: pointer; color: var(--text-muted); }
+.chart-flex { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; justify-content: center; }
+#ratioChartContainer { width: 250px; height: 250px; }
+.export-actions { display: flex; gap: 8px; margin-top: 15px; justify-content: flex-end; }
+
+/* --- 今日のキセキ：極致のデザイン魔法 --- */
+
+/* 1. キセキの結晶（チーム全体のプリズム・クリスタル・カード） */
+.miracle-card-prism {
+    position: relative;
+    padding: 18px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2), 
+                inset 0 0 15px rgba(255, 255, 255, 0.6);
+    overflow: hidden;
+    margin-bottom: 20px;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.miracle-card-prism::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0) 45%,
+        rgba(255, 255, 255, 0.8) 50%,
+        rgba(255, 255, 255, 0) 55%,
+        transparent 100%
+    );
+    transform: rotate(25deg);
+    animation: crystal-shimmer 6s infinite;
+    pointer-events: none;
+}
+
+@keyframes crystal-shimmer {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(25deg); }
+    20%, 100% { transform: translateX(100%) translateY(100%) rotate(25deg); }
+}
+
+.crystal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.crystal-title {
+    font-weight: 900;
+    font-size: 16px;
+    color: #b45309;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+    letter-spacing: 0.5px;
+}
+
+.crystal-stars {
+    margin-left: auto;
+    letter-spacing: 3px;
+    font-size: 18px;
+    filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.5));
+}
+
+.crystal-comment-box {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 12px 15px;
+    border-radius: 12px;
+    border: 1px solid #fde68a;
+    color: #78350f;
+    font-size: 15px;
+    line-height: 1.6;
+    font-weight: 500;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+/* 2. スタッフのキセキ（セレステ・メダル・バッジ） */
+.miracle-badge-celeste {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 15px;
+    background: white;
+    border-radius: 30px;
+    border: 1.5px solid #f3f4f6;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.miracle-badge-celeste:hover {
+    transform: translateX(5px);
+    border-color: #f59e0b;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+
+.badge-medal-icon {
+    width: 28px;
+    height: 28px;
+    background: #fffbeb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f59e0b;
+    border: 1px solid #fde68a;
+    flex-shrink: 0;
+}
+
+.badge-worker-name {
+    font-weight: 800;
+    color: var(--text-main);
+    font-size: 14px;
+    min-width: 60px;
+}
+
+.badge-stars {
+    color: #f59e0b;
+    letter-spacing: 1px;
+    font-size: 14px;
+    margin-right: 5px;
+}
+
+.badge-comment {
+    font-size: 14px;
+    color: var(--text-main);
+    border-left: 2px solid #fef3c7;
+    padding-left: 10px;
+    flex-grow: 1;
+}
+
+/* 自分のバッジへの特別な後光（オーラ） */
+.badge-is-me {
+    border-color: #f59e0b;
+    background: linear-gradient(to right, #ffffff, #fffbeb);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+}
+
+.badge-is-me::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 15%;
+    width: 70%;
+    height: 3px;
+    background: linear-gradient(to right, transparent, #f59e0b, transparent);
+    opacity: 0.6;
+}
+
+/* 秘密のキセキ（ミステリアスな紫のベール） */
+.badge-private {
+    background: #faf5ff;
+    border-color: #e9d5ff;
+}
+
+.badge-private .badge-medal-icon {
+    background: #f5f3ff;
+    color: #8b5cf6;
+    border-color: #ddd6fe;
+}
+
+.badge-private .badge-comment {
+    color: #7c3aed;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+/* ポップアニメーション */
+@keyframes miracle-pop {
+    0% { transform: scale(0.9); opacity: 0; }
+    70% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.miracle-new-entry {
+    animation: miracle-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* --- 今日のキセキ：統一ヘキサゴン・デザイン魔法 --- */
+
+/* 共通の六角形ベース */
+.miracle-hex-base {
+    position: relative;
+    padding: 12px 40px;
+    clip-path: polygon(4% 0%, 96% 0%, 100% 50%, 96% 100%, 4% 100%, 0% 50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+}
+
+.miracle-hex-base::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.7) 50%, transparent 55%);
+    background-size: 200% 200%;
+    animation: crystal-shimmer 4s infinite;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* 青系の結晶（チーム全体用：ダイアモンド・プリズム） */
+.miracle-hex-blue {
+    background: linear-gradient(135deg, #ffffff 0%, #e0f2fe 30%, #bae6fd 70%, #f0f9ff 100%);
+    border: none;
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.8), 0 0 15px rgba(14, 165, 233, 0.4);
+}
+
+.miracle-hex-blue::before {
+    background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.9) 50%, transparent 60%);
+    animation: crystal-shimmer 3s infinite;
+}
+
+.hex-wrapper-blue {
+    filter: drop-shadow(0 8px 15px rgba(14, 165, 233, 0.3));
+    margin-bottom: 20px;
+}
+
+.miracle-hex-blue .crystal-title-hex { color: #0369a1; }
+.miracle-hex-blue .crystal-comment-hex { color: #0c4a6e; }
+.miracle-hex-blue .gem-stars { color: #fbbf24; }
+
+/* オレンジ系の結晶（スタッフ個人用） */
+.miracle-hex-orange {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+    border: none;
+}
+
+.hex-wrapper-orange {
+    filter: drop-shadow(0 8px 12px rgba(245, 158, 11, 0.25));
+    margin-bottom: 12px;
+}
+
+.miracle-hex-orange .crystal-title-hex { color: #b45309; }
+.miracle-hex-orange .crystal-comment-hex { color: #78350f; }
+.miracle-hex-orange .gem-stars { color: #fbbf24; }
+
+/* スタッフ用のコンパクトサイズ */
+.miracle-hex-small {
+    min-height: 75px;
+    padding: 10px 30px;
+}
+
+.miracle-hex-small .crystal-title-hex { font-size: 14px; }
+.miracle-hex-small .crystal-comment-hex { font-size: 13px; max-width: 95%; }
+
+/* 自分の結晶（特別な輝き） */
+.hex-is-me {
+    box-shadow: inset 0 0 15px rgba(245, 158, 11, 0.5);
+    animation: hex-pulse 2s infinite ease-in-out;
+}
+
+@keyframes hex-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+/* 秘密の結晶（アメジスト・パープル） */
+.miracle-hex-private {
+    background: linear-gradient(135deg, #faf5ff 0%, #f5f3ff 50%, #ddd6fe 100%);
+}
+.miracle-hex-private .crystal-title-hex { color: #6d28d9; }
+.miracle-hex-private .crystal-comment-hex { color: #5b21b6; }
+.miracle-hex-private .gem-stars { color: #fbbf24; }
+.hex-wrapper-private { filter: drop-shadow(0 8px 12px rgba(139, 92, 246, 0.25)); }
+
+/* 既存の個別スタイルを整理 */
+.crystal-header-hex {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    z-index: 3;
+}
+
+.crystal-title-hex {
+    font-weight: 900;
+    font-size: 16px;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+    letter-spacing: 1px;
+}
+
+.crystal-comment-hex {
+    margin-top: 2px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    max-width: 90%;
+    z-index: 3;
+    line-height: 1.4;
+}
+
+/* 今日のキセキ 星評価スタイル */
+.miracle-stars { display: flex; gap: 8px; font-size: 32px; cursor: pointer; justify-content: center; margin: 15px 0; }
+.miracle-stars span { color: #cbd5e1; transition: transform 0.1s, color 0.1s; }
+.miracle-stars span:hover { transform: scale(1.2); }
+.miracle-stars span.active { color: #f59e0b; text-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+.miracle-stars span.active:active { transform: scale(0.9); }
+.miracle-comment { width: 100%; border-radius: 12px; border: 1px solid var(--border); padding: 12px; font-size: 14px; margin-top: 10px; background: #fffbeb; transition: all 0.2s; }
+.miracle-comment:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1); }
+.miracle-badge { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 4px; 
+    background: #fffbeb; 
+    color: #b45309; 
+    padding: 6px 14px; 
+    border-radius: 20px; 
+    font-size: 12px; 
+    font-weight: bold; 
+    margin-top: 5px; 
+    border: 1px solid #fde68a; 
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+}
+.miracle-card {
+    background: linear-gradient(to right, #fffbeb, #ffffff);
+    padding: 15px;
+    border-radius: 16px;
+    border: 1px solid #fde68a;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1);
+    margin-bottom: 12px;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+.miracle-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.15);
+}
+
+/* 魔法のキセキボタン：黄金のシマー・ジュエル */
+.btn-miracle-magic {
+    background: linear-gradient(225deg, #d4af37 0%, #ffd700 50%, #d4af37 100%) !important;
+    background-size: 200% auto !important;
+    border: none !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    animation: miracle-shimmer 3s linear infinite, miracle-float 2s ease-in-out infinite !important;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4), 0 0 20px rgba(255, 215, 0, 0.2) !important;
+}
+
+.btn-miracle-magic:hover {
+    transform: scale(1.05) translateY(-5px) !important;
+    box-shadow: 0 10px 25px rgba(212, 175, 55, 0.5), 0 0 30px rgba(255, 215, 0, 0.4) !important;
+}
+
+.btn-miracle-magic::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -150%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transform: rotate(45deg);
+    animation: reflect 3s ease-in-out infinite;
+}
+
+/* チームのキセキボタン：サファイア・シマー・ジュエル 💎 */
+.btn-miracle-team {
+    background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #38bdf8 100%) !important;
+    background-size: 200% auto !important;
+    border: none !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    animation: miracle-shimmer 3s linear infinite, miracle-float 2s ease-in-out infinite !important;
+    box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4), 0 0 20px rgba(129, 140, 248, 0.2) !important;
+}
+
+.btn-miracle-team:hover {
+    transform: scale(1.05) translateY(-5px) !important;
+    box-shadow: 0 10px 25px rgba(56, 189, 248, 0.5), 0 0 30px rgba(129, 140, 248, 0.4) !important;
+}
+
+.btn-miracle-team::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -150%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transform: rotate(45deg);
+    animation: reflect 3s ease-in-out infinite;
+}
+
+
+@keyframes miracle-shimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes miracle-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+@keyframes reflect {
+    0% { left: -150%; }
+    20% { left: 150%; }
+    100% { left: 150%; }
+}
+
+/* Gold Dust Particle Animation */
+.gold-dust-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    animation: gold-dust-animation 3s ease-out forwards;
+    user-select: none;
+    background: radial-gradient(circle, #fbbf24 0%, #f59e0b 60%, rgba(245, 158, 11, 0) 100%);
+    box-shadow: 0 0 8px #f59e0b, 0 0 12px #fbbf24;
+    transform: translateY(0) rotate(0deg) scale(0.5);
+    opacity: 1;
+}
+
+@keyframes gold-dust-animation {
+    0% {
+        transform: translateY(0) rotate(0deg) scale(0.5);
+        opacity: 1;
+    }
+    40% {
+        transform: translateY(-30vh) translateX(calc(var(--tx, 0) * 1px)) rotate(180deg) scale(1.4);
+        opacity: 1;
+    }
+    70% {
+        transform: translateY(-70vh) translateX(calc(var(--tx, 0) * 1px)) rotate(360deg) scale(1.0);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-110vh) translateX(calc(var(--tx, 0) * 1px)) rotate(450deg) scale(0.4);
+        opacity: 0;
+    }
+}
+
+/* --- 絆の魔法スタイル --- */
+.kizuna-notice-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    font-weight: 800;
+    font-size: 13px;
+    animation: fadeIn 0.5s ease;
+}
+
+.pulse-icon {
+    animation: pulse-kizuna 2s infinite;
+}
+
+@keyframes pulse-kizuna {
+    0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(255,255,255,0.7)); }
+    70% { transform: scale(1.2); filter: drop-shadow(0 0 10px rgba(255,255,255,0)); }
+    100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(255,255,255,0)); }
+}
+
+.announcement-card {
+    background: white;
+    border-top: 5px solid #f59e0b;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    position: relative; /* バッジ配置用 */
+}
+
+/* 期限付き告知の特別な色（アラート・レッド） */
+.announcement-card.deadline {
+    border-top-color: #ef4444;
+}
+
+.ann-badge {
+    position: absolute;
+    top: -12px;
+    left: 10px;
+    background: #f59e0b;
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 900;
+}
+.announcement-card.deadline .ann-badge {
+    background: #ef4444;
+}
+
+.quest-card {
+    background: white;
+    border-top: 5px solid #6366f1;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    position: relative;
+    transition: transform 0.2s;
+}
+
+/* 個人宛依頼の特別な色（ロゼ・ピンク） */
+.quest-card.personal {
+    border-top-color: #ec4899;
+}
+.quest-card.personal .quest-badge {
+    background: #ec4899;
+}
+
+.quest-card:hover { transform: translateY(-3px); }
+
+.quest-badge {
+    position: absolute;
+    top: -12px;
+    left: 10px;
+    background: #6366f1;
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 900;
+}
+
+.read-chip-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #eee;
+}
+
+.read-chip {
+    font-size: 10px;
+    background: #f1f5f9;
+    color: #64748b;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.read-chip.done {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.link-chip:hover {
+    background: #dcfce7;
+    transform: scale(1.05);
+}
+
+/* --- 連携：アプリアイコン形式の魔法 --- */
+#links-area {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 15px;
+    padding: 10px 5px;
+}
+
+.link-app-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    width: 70px;
+}
+
+.link-app-item:hover {
+    transform: scale(1.1);
+}
+
+.link-app-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    position: relative;
+    background: white;
+    border: 2px solid transparent;
+}
+
+.link-app-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #475569;
+    text-align: center;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+/* 種類別のアイコン色 */
+.icon-url { background: #ecfdf5; color: #10b981; border-color: #bbf7d0; }
+.icon-file { background: #f5f3ff; color: #6366f1; border-color: #ddd6fe; }
+
+/* アイコン選択ボタン */
+.icon-sel-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background: white;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    padding: 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.icon-sel-btn:hover {
+    background: #f1f5f9;
+    color: var(--primary);
+}
+
+.icon-sel-btn.active {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: #fffbeb;
+    transform: scale(1.1);
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
+}
+
+/* --- ドロップゾーンの魔法 --- */
+.file-drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 15px;
+    padding: 25px 15px;
+    text-align: center;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-drop-zone.dragover {
+    border-color: var(--primary);
+    background: #fffbeb;
+    transform: scale(1.02);
+    box-shadow: 0 10px 20px rgba(245, 158, 11, 0.1);
+}
+
+.file-drop-zone:hover {
+    border-color: var(--primary);
+    background: #f1f5f9;
+}
+
+.selected-file-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: white;
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    margin: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+/* --- キセキの絆：司令室とタブの魔法 --- */
+.kizuna-tabs {
+    display: flex;
+    gap: 16px; /* 10pxから16pxに拡張：星の舞うスペース */
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+/* 新着の星：瞬く絆の予感（SVG版） */
+.new-star {
+    position: absolute;
+    top: -8px;
+    right: -4px;
+    pointer-events: none;
+    display: none; /* 初期は非表示 */
+}
+
+.new-star-icon {
+    width: 14px;
+    height: 14px;
+    fill: #f59e0b;
+    filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.8));
+    animation: star-sparkle 2s infinite ease-in-out;
+}
+
+@keyframes star-sparkle {
+    0%, 100% {
+        transform: translateY(0) scale(1) rotate(0deg);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(-4px) scale(1.3) rotate(20deg);
+        opacity: 1;
+    }
+}
+
+/* --- キセキの絆：新着の魔法（グラデーションと星） --- */
+.new-arrival-card {
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%) !important;
+    border-left: 4px solid #f59e0b !important;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15) !important;
+}
+
+.floating-star-inline {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 6px;
+    line-height: 0;
+}
+
+.new-star-icon-inline {
+    width: 14px;
+    height: 14px;
+    fill: #f59e0b;
+    filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.6));
+    animation: star-float-inline 2s infinite ease-in-out;
+}
+
+@keyframes star-float-inline {
+    0%, 100% {
+        transform: translateY(0) scale(1) rotate(0deg);
+        opacity: 0.7;
+    }
+    50% {
+        transform: translateY(-3px) scale(1.2) rotate(15deg);
+        opacity: 1;
+    }
+}
+
+.kizuna-tab {
+    position: relative; /* 星を配置するための基準 */
+    font-size: 12px;
+    font-weight: bold;
+    color: #92400e;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center; gap: 4px;
+}
+
+.kizuna-tab:hover { background: rgba(217, 119, 6, 0.1); }
+.kizuna-tab.active { background: #f59e0b; color: white; box-shadow: 0 2px 5px rgba(245, 158, 11, 0.3); }
+
+.tab-badge {
+    background: white;
+    color: #f59e0b;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 15px;
+    text-align: center;
+}
+
+.kizuna-tab.active .tab-badge { color: #f59e0b; background: white; }
+
+/* --- 絆のテーマ魔法：色彩の共鳴 --- */
+
+/* クエストテーマ ⚔️ (インディゴ・パープル) */
+.kizuna-theme-quest { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%) !important; border-color: #ddd6fe !important; }
+.kizuna-theme-quest h2 { color: #4338ca !important; }
+.kizuna-theme-quest h2 button { color: #4338ca !important; } /* 拡大ボタン */
+.kizuna-theme-quest .kizuna-tab.active { background: #6366f1 !important; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4) !important; }
+
+/* 告知テーマ 📢 (オレンジ・ゴールド) */
+.kizuna-theme-ann { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important; border-color: #fde68a !important; }
+.kizuna-theme-ann h2 { color: #d97706 !important; }
+.kizuna-theme-ann h2 button { color: #d97706 !important; }
+.kizuna-theme-ann .kizuna-tab.active { background: #f59e0b !important; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4) !important; }
+
+/* 連携テーマ 🔗 (エメラルド・ミント) */
+.kizuna-theme-link { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important; border-color: #bbf7d0 !important; }
+.kizuna-theme-link h2 { color: #059669 !important; }
+.kizuna-theme-link h2 button { color: #059669 !important; }
+.kizuna-theme-link .kizuna-tab.active { background: #10b981 !important; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4) !important; }
+
+/* 司令室モード（全画面） */
+#kizuna-section.fullscreen-kizuna {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    z-index: 2000;
+    margin: 0;
+    padding: 30px;
+    overflow-y: auto;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    box-shadow: 0 0 50px rgba(0,0,0,0.3);
+    animation: modalFadeIn 0.3s ease;
+}
+
+/* 通常・全画面共通のコンテンツエリア設定 */
+.kizuna-content-area {
+    display: grid;
+    grid-template-columns: 1fr; /* 告知と依頼は1列 */
+    gap: 12px;
+}
+
+#links-area.kizuna-content-area {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); /* 連携だけ横並びグリッド */
+    gap: 15px;
+    padding: 10px 5px;
+}
+
+/* 全画面時のコンテンツ配置の微調整 */
+#kizuna-section.fullscreen-kizuna .kizuna-content-area {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+#kizuna-section.fullscreen-kizuna #links-area.kizuna-content-area {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+}
+
+/* 全画面時の背景オーバーレイ */
+.kizuna-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(5px);
+    z-index: 1999;
+    display: none;
+}
+
+/* --- 特製・キセキの絆アイコン：鼓動する信頼 --- */
+.kizuna-handshake-icon {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+    animation: kizuna-beat 3s infinite ease-in-out;
+}
+
+.kizuna-handshake-icon:hover {
+    transform: scale(1.2) rotate(5deg);
+    filter: drop-shadow(0 0 12px var(--primary));
+}
+
+@keyframes kizuna-beat {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+    }
+    15% {
+        transform: scale(1.15);
+        filter: drop-shadow(0 0 10px var(--primary));
+    }
+    30% {
+        transform: scale(1.05);
+        filter: drop-shadow(0 0 7px var(--primary));
+    }
+    45% {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 12px var(--primary));
+    }
+}
+
+/* --- 時間連動：ヘッダーの魔法（色彩の移ろい） --- */
+#main-header {
+    transition: all 1s ease-in-out !important;
+}
+
+/* 🌅 朝：爽やかなミント＆スカイ (5-10時) */
+.header-morning {
+    background: linear-gradient(135deg, #065f46 0%, #10b981 50%, #34d399 100%) !important;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
+}
+
+/* ☀️ 昼：輝くスカイ＆ゴールド (10-16時) */
+.header-day {
+    background: linear-gradient(135deg, #0369a1 0%, #0ea5e9 50%, #38bdf8 100%) !important;
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3) !important;
+}
+
+/* 🌆 夕：燃えるオレンジ＆パープル (16-19時) */
+.header-evening {
+    background: linear-gradient(135deg, #92400e 0%, #f59e0b 50%, #fbbf24 100%) !important;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3) !important;
+}
+
+/* 🌙 夜：静かなネイビー＆ミッドナイト (19-5時) */
+.header-night {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%) !important;
+    box-shadow: 0 4px 20px rgba(30, 27, 75, 0.5) !important;
+}
+
+/* 黄金に輝くロゴテキスト */
+#header-logo-line2 {
+    background: linear-gradient(to bottom, #ffffff 0%, #fef3c7 20%, #fbbf24 40%, #f59e0b 50%, #fbbf24 60%, #fef3c7 80%, #ffffff 100%);
+    background-size: 100% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shine-text 5s linear infinite;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+}
+
+/* 魔法の宝石（✨） */
+.magic-jewel {
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+    position: relative;
+    animation: jewel-pulse 2s infinite ease-in-out;
+}
+
+/* 宝石の形状（SVGをマスクとして使用） */
+.magic-jewel::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'/%3E%3C/svg%3E") no-repeat center;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'/%3E%3C/svg%3E") no-repeat center;
+}
+
+/* テーマごとの宝石の色 */
+.header-morning .magic-jewel { color: #34d399; filter: drop-shadow(0 0 8px #10b981); } /* エメラルド */
+.header-day .magic-jewel { color: #7dd3fc; filter: drop-shadow(0 0 8px #0ea5e9); }     /* サファイア */
+.header-evening .magic-jewel { color: #fbbf24; filter: drop-shadow(0 0 8px #f59e0b); } /* トパーズ */
+.header-night .magic-jewel { color: #a78bfa; filter: drop-shadow(0 0 8px #8b5cf6); }   /* アメジスト */
+
+@keyframes jewel-pulse {
+    0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+    50% { transform: scale(1.3) rotate(15deg); opacity: 1; }
+}
+
+@keyframes shine-text {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
+}
+
+/* ロゴ用エンブレムアイコン */
+.kizuna-crest-icon {
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.6));
+    animation: crest-float 3s ease-in-out infinite;
+    margin-bottom: 5px;
+}
+
+/* --- 特製・キセキ of 絆アイコン：アイコンの魂 --- */
+.kizuna-icon {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.2px;
+    stroke: currentColor;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.3));
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* ボタンホバー時にアイコンが「ドキッ」と鼓動する */
+button:hover .kizuna-icon, .action-chip:hover .kizuna-icon {
+    transform: scale(1.25) rotate(5deg);
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* 時間帯に応じたアイコンの微かな発光（グロー） */
+.header-morning .kizuna-icon { filter: drop-shadow(0 0 4px #34d399); }
+.header-day .kizuna-icon { filter: drop-shadow(0 0 4px #7dd3fc); }
+.header-evening .kizuna-icon { filter: drop-shadow(0 0 4px #fbbf24); }
+.header-night .kizuna-icon { filter: drop-shadow(0 0 4px #a78bfa); }
+
+/* アイコン専用のアニメーション：ふんわり浮遊 */
+@keyframes kizuna-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+}
+.kizuna-float { animation: kizuna-float 3s ease-in-out infinite; }
+
+/* --- キセキの余韻：エレガントな小紋章 --- */
+.kizuna-echo {
+    width: 14px;
+    height: 14px;
+    stroke-width: 1.5px;
+    opacity: 0.7;
+    margin-left: 4px;
+    vertical-align: baseline;
+    display: inline-block;
+    filter: drop-shadow(0 0 2px currentColor);
+    animation: echo-shimmer 4s infinite ease-in-out;
+}
+
+@keyframes echo-shimmer {
+    0%, 100% { opacity: 0.4; transform: translateY(0) scale(0.9); }
+    50% { opacity: 0.8; transform: translateY(-2px) scale(1.1); }
+}
+
+/* 🌟 第2工程：【視覚ガイド】情熱のラベル変化 🌟 */
+.label-passion {
+    color: #db2777 !important; /* 情熱のピンク（Rose-600） */
+    font-weight: 900 !important;
+    text-shadow: 0 0 10px rgba(219, 39, 119, 0.4);
+    animation: passion-pulse 2s infinite ease-in-out;
+    display: inline-block;
+}
+
+/* 🌟 第3工程：【入力革命】大画面チップ選択UI 🌟 */
+.chip-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    padding: 10px 0;
+}
+
+.selection-chip {
+    height: 80px;
+    padding: 15px 10px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background-color: white;
+    color: var(--text-main);
+    font-size: 15px;
+    font-weight: 800;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.05);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    line-height: 1.2;
+    position: relative;
+    overflow: visible;
+}
+
+.chip-indicator-container {
+    position: absolute;
+    top: -6px;
+    right: -4px;
+    display: flex;
+    gap: 2px;
+    z-index: 10;
+}
+
+.chip-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    border: 2px solid white;
+}
+
+.indicator-fav { background: #f59e0b; }
+.indicator-res { background: #ec4899; }
+
+.selection-chip:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+}
+
+.selection-chip i {
+    margin-bottom: 6px;
+    opacity: 0.7;
+}
+
+/* モーダル内のタブ切り替え */
+.modal-tabs {
+    display: flex;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.modal-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-weight: 800;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.modal-tab.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 特別の輝き（📝フラグ付きチップ） */
+.selection-chip.has-memo::after {
+    display: none !important;
+}
+
+/* 🌟 第4工程：【追跡】未完了タスクのカード化 🌟 */
+.result-pending-card {
+    background: white;
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-left: 6px solid #db2777; /* 情熱のピンク */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.result-pending-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.result-pending-worker {
+    font-size: 12px;
+    font-weight: 800;
+    color: #6366f1;
+    background: #f5f3ff;
+    padding: 2px 8px;
+    border-radius: 20px;
+}
+
+.result-pending-time {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.result-pending-task {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--text-main);
+}
+
+/* キラキラ輝く魔法のボタン（インボックス・ゼロへの導き） */
+.btn-magic-sparkle {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #db2777 0%, #9d174d 100%) !important;
+    animation: sparkle-glow 2s infinite ease-in-out;
+}
+
+@keyframes sparkle-glow {
+    0%, 100% { box-shadow: 0 4px 15px rgba(219, 39, 119, 0.4); transform: scale(1); }
+    50% { box-shadow: 0 4px 25px rgba(219, 39, 119, 0.7); transform: scale(1.02); }
+}
+
+.btn-magic-sparkle::before {
+    content: "✨";
+    position: absolute;
+    top: -10px;
+    right: 10px;
+    font-size: 20px;
+    animation: star-float 1.5s infinite;
+}
+
+@keyframes star-float {
+    0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.5; }
+    50% { transform: translateY(-10px) rotate(20deg); opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes passion-pulse {
+    0% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 0px #db2777); }
+    50% { transform: scale(1.05); opacity: 0.8; filter: drop-shadow(0 0 8px #db2777); }
+    100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 0px #db2777); }
+}
+
+/* キセキの絆：カードデザイン移植 */
+.announcement-card, .quest-card {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.announcement-card:hover, .quest-card:hover { transform: translateY(-3px); }
+
+.ann-badge, .quest-badge {
+    position: absolute;
+    top: -12px;
+    left: 10px;
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 900;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.new-arrival-card {
+    animation: slideIn 0.5s ease-out;
+}
+
+.floating-star-inline {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 6px;
+    line-height: 0;
+}
+
+.new-star-icon-inline {
+    width: 14px;
+    height: 14px;
+    fill: #f59e0b;
+    filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.6));
+    animation: star-float-inline 2s infinite ease-in-out;
+}
+
+@keyframes star-float-inline {
+    0%, 100% {
+        transform: translateY(0) scale(1) rotate(0deg);
+        opacity: 0.7;
+    }
+    50% {
+        transform: translateY(-3px) scale(1.2) rotate(15deg);
+        opacity: 1;
+    }
+}
+
+
