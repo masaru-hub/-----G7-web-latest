@@ -1,0 +1,6 @@
+{
+  "name": "お仕事のキセキ",
+  "description": "お仕事のキセキ - 予実管理・絆の連携・キセキの観測",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

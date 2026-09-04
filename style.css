@@ -922,6 +922,12 @@ th, td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border);
     position: relative; /* バッジ配置用 */
 }
 
+.announcement-content {
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.6;
+}
+
 /* 期限付き告知の特別な色（アラート・レッド） */
 .announcement-card.deadline {
     border-top-color: #ef4444;

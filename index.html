@@ -13,55 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
     <!-- Firebase SDK -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-        // 最新のFirebase構成情報 (kiseki-trial)
-        const firebaseConfig = {
-            apiKey: "AIzaSyDLdJqns5myID4fGv3848EqH7m-2YjuI6Y",
-            authDomain: "kiseki-trial.firebaseapp.com",
-            projectId: "kiseki-trial",
-            storageBucket: "kiseki-trial.firebasestorage.app",
-            messagingSenderId: "536584906374",
-            appId: "1:536584906374:web:2172a118cfd110de661307",
-            databaseURL: "https://kiseki-trial-default-rtdb.firebaseio.com"
-        };
-
-        let db = null;
-        let repo = null;
-        let auth = null;
-
-        const initFirebase = async () => {
-            try {
-                console.log("🚀 Initializing Firebase...");
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                // 匿名ログインを実行（セキュリティルールを通すため）
-                console.log("🔐 Signing in anonymously...");
-                await signInAnonymously(auth);
-                console.log("✅ Signed in successfully!");
-
-                // リポジトリの初期化
-                const sdk = { doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, deleteDoc, writeBatch };
-                repo = new KizunaRepository(db, sdk);
-                
-                window.firebaseDB = db;
-                window.fbSDK = sdk;
-                window.kizunaRepo = repo;
-                window.firebaseAuth = auth;
-
-                console.log("✨ KizunaRepository Ready.");
-            } catch (e) {
-                console.error("🚨 Firebase Initialization Error:", e);
-                alert("Firebaseの接続に失敗しました。通信環境や設定を確認してください。");
-            }
-        };
-
-        // 初期化実行
-        initFirebase();
+        import { initFirebaseApp } from "/src/firebase-config.js";
 
         // SDKの準備ができてから初期化（core.jsがまだの場合はリトライ）
         const startApp = () => {
@@ -71,7 +23,14 @@
                 setTimeout(startApp, 100);
             }
         };
-        startApp();
+
+        initFirebaseApp()
+            .then(() => {
+                startApp();
+            })
+            .catch((err) => {
+                console.error("Failed to start app due to Firebase init error:", err);
+            });
     </script>
 </head>
 <body>
@@ -94,10 +53,10 @@
         <!-- 下段：アクション（カレンダー・時計・設定） -->
         <div id="header-actions">
             <!-- 魔法の日付セレクタ -->
-            <div class="header-action-item" onclick="document.getElementById('target-date').showPicker()">
+            <div class="header-action-item" onclick="try{ document.getElementById('target-date').showPicker(); }catch(e){}" style="position: relative; cursor: pointer;">
                 <svg class="kizuna-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
                 <div id="current-date"></div>
-                <input type="date" id="target-date" onchange="changeDate()" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                <input type="date" id="target-date" onchange="changeDate()" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
             </div>
             <!-- 黄金バランスの時計 -->
             <div class="header-action-item">
@@ -642,7 +601,10 @@
                 <div id="selected-ann-files-preview" style="margin-top:10px; width:100%;"></div>
             </div>
         </div>
-        <button onclick="saveAnnouncement()" style="background: var(--primary); width:100%; margin-top:10px;">告知を飛ばす</button>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+            <button onclick="saveAnnouncement()" style="background: var(--primary); flex:1;">告知を飛ばす</button>
+            <button type="button" id="ann-cancel-edit-btn" onclick="cancelEditAnnouncement()" class="btn-outline" style="display:none; width:auto; padding:0 12px; font-size:12px; border-color:#cbd5e1; color:#64748b;">✕ 編集解除</button>
+        </div>
         <!-- 【新設】モーダル内リスト -->
         <div id="modal-ann-list" style="margin-top: 20px; border-top: 2px dashed var(--border); padding-top: 15px; max-height: 200px; overflow-y: auto;"></div>
     </div>
@@ -686,7 +648,10 @@
                 <div id="selected-files-preview" style="margin-top:10px; width:100%;"></div>
             </div>
         </div>
-        <button onclick="saveQuest()" style="background: var(--accent); width:100%; margin-top:10px;">クエストを発令</button>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+            <button onclick="saveQuest()" style="background: var(--accent); flex:1;">クエストを発令</button>
+            <button type="button" id="quest-cancel-edit-btn" onclick="cancelEditQuest()" class="btn-outline" style="display:none; width:auto; padding:0 12px; font-size:12px; border-color:#cbd5e1; color:#64748b;">✕ 編集解除</button>
+        </div>
         <!-- 【新設】モーダル内リスト -->
         <div id="modal-quest-list" style="margin-top: 20px; border-top: 2px dashed var(--border); padding-top: 15px; max-height: 200px; overflow-y: auto;"></div>
     </div>
@@ -740,6 +705,62 @@
         <button onclick="saveLink()" style="background: var(--success); width:100%; margin-top:10px;">連携を繋ぐ</button>
         <!-- 【新設】モーダル内リスト -->
         <div id="modal-link-list" style="margin-top: 20px; border-top: 2px dashed var(--border); padding-top: 15px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<!-- 【新設】記録削除・ガントチャート自動調整モーダル -->
+<div id="task-delete-modal" class="modal">
+    <div class="modal-content" style="max-width: 480px; padding: 25px; border-radius: 20px;">
+        <span class="close-modal" onclick="closeTaskDeleteModal()">&times;</span>
+        <h2 style="font-size: 18px; font-weight: 900; color: #1e293b; display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <svg class="kizuna-icon" viewBox="0 0 24 24" style="width:22px; height:22px; color:#ef4444;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            記録の削除とガントチャート調整
+        </h2>
+        <div id="task-delete-info" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 13px; color: #334155;">
+            <!-- 対象タスク情報が動的に入ります -->
+        </div>
+        
+        <div id="task-delete-merge-option" style="display: none; margin-bottom: 12px;">
+            <button type="button" onclick="executeTaskDelete('merge')" style="width: 100%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 14px 16px; border-radius: 12px; text-align: left; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); border: none; cursor: pointer;">
+                <div style="font-weight: 900; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                    <span>✨</span>
+                    <span id="delete-merge-title">前の作業を自動延長して繋げる（推奨）</span>
+                </div>
+                <div id="delete-merge-desc" style="font-size: 11px; opacity: 0.95; margin-top: 4px; padding-left: 20px;">
+                    ガントチャートの隙間を埋めて、連続した作業としてグラフを更新します。
+                </div>
+            </button>
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+            <button type="button" onclick="executeTaskDelete('simple')" class="btn-outline" style="width: 100%; border: 1px solid #cbd5e1; color: #475569; background: white; padding: 12px 16px; border-radius: 12px; text-align: left; cursor: pointer;">
+                <div style="font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                    <span>🗑️</span>
+                    <span>単に削除する（空き時間にする）</span>
+                </div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 2px; padding-left: 20px;">
+                    前後の作業時間は変更せず、この記録のみを削除します。
+                </div>
+            </button>
+        </div>
+        
+        <button type="button" onclick="closeTaskDeleteModal()" class="btn-small btn-outline" style="width: 100%; border: none; color: #94a3b8; padding: 8px; font-weight: bold; cursor: pointer; text-align: center;">
+            キャンセル
+        </button>
+    </div>
+</div>
+
+<!-- 🌟 キセキの確認モーダル（iframe内でも確実に動作するインアプリ確認ダイアログ） 🌟 -->
+<div id="kizuna-confirm-modal" class="modal">
+    <div class="modal-content" style="max-width: 440px; padding: 26px; border-radius: 20px; text-align: center;">
+        <span class="close-modal" onclick="closeKizunaConfirmModal()">&times;</span>
+        <div id="kizuna-confirm-icon" style="font-size: 38px; margin-bottom: 12px; line-height: 1;">✨</div>
+        <h3 id="kizuna-confirm-title" style="font-size: 18px; font-weight: 900; color: #1e293b; margin-bottom: 10px;">確認</h3>
+        <p id="kizuna-confirm-message" style="font-size: 14px; color: #475569; margin-bottom: 22px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;"></p>
+        <div style="display: flex; gap: 10px;">
+            <button type="button" id="kizuna-confirm-cancel-btn" onclick="closeKizunaConfirmModal()" class="btn-outline" style="flex: 1; padding: 12px; border-radius: 12px; font-weight: bold; border: 1px solid #cbd5e1; color: #64748b; background: white; cursor: pointer;">キャンセル</button>
+            <button type="button" id="kizuna-confirm-ok-btn" class="btn-small" style="flex: 1.2; padding: 12px; border-radius: 12px; font-weight: 900; background: #6366f1; color: white; border: none; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">OK</button>
+        </div>
     </div>
 </div>
 

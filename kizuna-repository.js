@@ -191,13 +191,15 @@ class KizunaRepository {
         const { doc, deleteDoc } = this.sdk;
         if (!deleteDoc) {
             console.warn("deleteDoc is not provided in SDK. Check index.html imports.");
-            return;
+            return false;
         }
         try {
             const taskRef = doc(this.db, this.COLL_DAILY, date, type, taskId);
             await deleteDoc(taskRef);
+            return true;
         } catch (e) {
-            throw new RepositoryError(`Task Delete Error (${date}/${type}/${taskId})`, e);
+            console.warn(`Task Delete Warning (${date}/${type}/${taskId}):`, e);
+            return false;
         }
     }
 

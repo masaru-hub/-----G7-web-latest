@@ -27,6 +27,29 @@ window.setGanttViewMode = function(mode) {
     renderChart();
 };
 
+// 日付差分計算（ローカル日付基準で正確に本日締切・残日数を算出）
+window.calculateDaysRemaining = function(dateStr) {
+    if (!dateStr) return null;
+    let targetYear, targetMonth, targetDay;
+    if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+        const parts = dateStr.split('T')[0].split('-');
+        targetYear = parseInt(parts[0], 10);
+        targetMonth = parseInt(parts[1], 10) - 1;
+        targetDay = parseInt(parts[2], 10);
+    } else {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return null;
+        targetYear = d.getFullYear();
+        targetMonth = d.getMonth();
+        targetDay = d.getDate();
+    }
+    const targetDate = new Date(targetYear, targetMonth, targetDay, 0, 0, 0, 0);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const diffTime = targetDate.getTime() - today.getTime();
+    return Math.round(diffTime / (1000 * 60 * 60 * 24));
+};
+
 // データ初期化 (dailyはキャッシュとして保持)
 let data = {
     daily: {}, // メモリ上のキャッシュ
@@ -126,7 +149,11 @@ window.initApp = async () => {
             const dailyCache = data.daily; 
             Object.assign(data, cloudMaster);
             data.daily = dailyCache; 
+            ['favorites', 'resultRequiredTasks', 'taskStyles', 'excelColors', 'workPatterns', 'announcements', 'quests', 'links'].forEach(k => {
+                if (!data[k]) data[k] = (k === 'taskStyles' || k === 'excelColors') ? {} : [];
+            });
             renderUI();
+            if (typeof window.renderModalLists === 'function') window.renderModalLists();
             setStatus('📡', '接続済み', '#10b981');
         });
 
@@ -163,13 +190,19 @@ window.setupDailySubscription = (date) => {
 };
 
 window.saveAndRefresh = async function(type = 'both') {
-    if (!window.kizunaRepo) return;
+    if (!window.kizunaRepo) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        if (typeof renderUI === 'function') renderUI();
+        if (typeof window.renderModalLists === 'function') window.renderModalLists();
+        return;
+    }
 
     try {
         if (type === 'master' || type === 'both') {
             const masterDataToSave = { ...data };
             delete masterDataToSave.daily; 
-            await window.kizunaRepo.saveMasterData(masterDataToSave);
+            const cleanMaster = JSON.parse(JSON.stringify(masterDataToSave));
+            await window.kizunaRepo.saveMasterData(cleanMaster);
         }
         if (type === 'daily' || type === 'both') {
             // ミラクル（評価）のみを保存（タスク本体は個別に保存されるようになったため）
@@ -184,14 +217,19 @@ window.saveAndRefresh = async function(type = 'both') {
     }
     
     if (typeof renderUI === 'function') renderUI();
+    if (typeof window.renderModalLists === 'function') window.renderModalLists();
 };
 
 // 【重要】日付変更時の挙動をアップデート
-window.changeDate = async function() {
-    const newDate = document.getElementById('target-date')?.value;
+window.changeDate = async function(newDateVal) {
+    const targetInput = document.getElementById('target-date');
+    const newDate = newDateVal || targetInput?.value;
     if (!newDate) return;
     
     selectedDate = newDate;
+    if (targetInput && targetInput.value !== selectedDate) {
+        targetInput.value = selectedDate;
+    }
     
     // --- 【進化】新しい日付のリアルタイム監視に切り替え ---
     if (typeof window.setupDailySubscription === 'function') {
@@ -200,7 +238,9 @@ window.changeDate = async function() {
 
     const prevDate = getPrevDate(selectedDate);
     // 前日のデータなどは一括ロードで補完
-    await window.loadMultipleDates([prevDate]);
+    if (typeof window.loadMultipleDates === 'function') {
+        await window.loadMultipleDates([prevDate]);
+    }
 
     // スタッフ情報のクリア
     const wId = document.getElementById('worker-id-input'), wSel = document.getElementById('worker-select');
@@ -209,7 +249,25 @@ window.changeDate = async function() {
     const dWorker = document.getElementById('display-worker');
     if (dWorker) dWorker.innerText = "スタッフを選択 👤";
 
-    renderUI();
+    if (typeof renderUI === 'function') renderUI();
+};
+
+window.shiftDate = function(days) {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + days);
+    const y = d.getFullYear();
+    const m = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    const newDateStr = `${y}-${m}-${day}`;
+    window.changeDate(newDateStr);
+};
+
+window.goToday = function() {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = (today.getMonth() + 1).toString().padStart(2, '0');
+    const d = today.getDate().toString().padStart(2, '0');
+    window.changeDate(`${y}-${m}-${d}`);
 };
 
 window.setTask = function(name) { 
@@ -320,7 +378,7 @@ function updateHeaderMagic(hour) {
 
 window.renderUI = function() {
     const today = new Date(); today.setHours(0,0,0,0);
-    data.announcements = (data.announcements || []).filter(a => !a.expiresAt || new Date(a.expiresAt) >= today);
+    data.announcements = (data.announcements || []).filter(a => !a.expiresAt || window.calculateDaysRemaining(a.expiresAt) >= 0);
     const day = getDayData(selectedDate), prev = getDayData(getPrevDate(selectedDate));
     const miracleArea = document.getElementById('miracle-action-area'); if (miracleArea) miracleArea.style.display = currentMode === 'actual' ? 'flex' : 'none';
     document.getElementById('target-date').value = selectedDate;
@@ -356,7 +414,16 @@ window.renderUI = function() {
         const tailsAct = prev.tasks.filter(t => t.endISO > toISO(selectedDate, '00:00')).map(t => ({...t, type:'実(継)', isTail:true}));
         const tailsPln = prev.plans.filter(p => p.endISO > toISO(selectedDate, '00:00')).map(p => ({...p, type:'予(継)', isTail:true}));
         const all = [...tailsAct, ...tailsPln, ...day.tasks.map((t,i)=>({...t,type:'実',idx:i})), ...day.plans.map((p,i)=>({...p,type:'予',idx:i}))].filter(item => !searchTerm || item.worker.replace(/ \[.*?\]$/, '').toLowerCase().includes(searchTerm)).sort((a,b)=>a.start.localeCompare(b.start));
-        all.forEach(item => { const tr = document.createElement('tr'); tr.innerHTML = `<td><span class="badge" style="background:${item.type.includes('予')?'#e2e8f0':'#fef3c7'}">${item.type}</span></td><td>${item.worker.replace(/ \[.*?\]$/, '')}</td><td>${item.name}${item.remark?`<br><small>(${item.remark})</small>`:''}</td><td>${item.isTail?'00:00':item.start}-${item.end}</td><td>${item.duration}h</td><td>${item.isTail?'':`<button onclick="deleteItem('${item.type}',${item.idx})" class="btn-small">消</button>`}</td>`; tbody.appendChild(tr); });
+        all.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><span class="badge" style="background:${item.type.includes('予')?'#e2e8f0':'#fef3c7'}">${item.type}</span></td>
+            <td>${item.worker.replace(/ \[.*?\]$/, '')}</td>
+            <td>${item.name}${item.remark?`<br><small>(${item.remark})</small>`:''}</td>
+            <td>${item.isTail?'00:00':item.start}-${item.end}</td>
+            <td>${item.duration}h</td>
+            <td>${item.isTail?'':`<div style="display:flex; gap:4px;"><button onclick="editTaskItem('${item.type}',${item.idx},${item.id ? `'${item.id}'` : 'null'})" class="btn-small btn-outline" style="padding:2px 6px; font-weight:bold; color:var(--primary); border-color:var(--primary);" title="時間を修正">編</button><button onclick="deleteItem('${item.type}',${item.idx},${item.id ? `'${item.id}'` : 'null'})" class="btn-small" style="padding:2px 6px; color:#ef4444;" title="削除">消</button></div>`}</td>`;
+            tbody.appendChild(tr);
+        });
     }
     const actH = day.tasks.filter(t => !data.masterSpecials.includes(t.name.trim()) && t.name!=='休憩').reduce((s, t) => s + parseFloat(t.duration), 0);
     const plnH = day.plans.filter(p => !data.masterSpecials.includes(p.name.trim()) && p.name!=='休憩').reduce((s, p) => s + parseFloat(p.duration), 0);
@@ -380,10 +447,49 @@ function renderChart() {
         const yL = data.masterWorkers.map(w => w.replace(/ \[.*?\]$/, '')), now = new Date(), startOfToday = new Date(selectedDate + 'T00:00:00'), nowDec = (now - startOfToday) / 3600000, isChartToday = selectedDate === now.toLocaleDateString('sv-SE'), ds = [];
         const taskNames = [...new Set([...data.masterTasks, ...data.masterSpecials, '休憩', '移動'])], getDecFromISO = (iso) => (new Date(iso) - startOfToday) / 3600000;
         const categories = ganttViewMode === 'all' ? [{ key: 'plans', labelSuffix: '(予)', isPlan: true, barPct: 0.9 }, { key: 'tasks', labelSuffix: '(実)', isPlan: false, barPct: 0.6 }] : [{ key: 'tasks', labelSuffix: '(実)', isPlan: false, barPct: 0.6 }];
+        
+        // 🌟 ワーカーごとの「最新の進行中タスク（Liveタスク）」を一意に特定
+        const liveWorkerTaskMap = new Map();
+        if (isChartToday) {
+            data.masterWorkers.forEach(w => {
+                const workerActuals = (day.tasks || []).filter(t => t.worker === w);
+                if (workerActuals.length > 0) {
+                    const sorted = [...workerActuals].sort((a, b) => (a.startISO || '').localeCompare(b.startISO || ''));
+                    const latest = sorted[sorted.length - 1];
+                    if (latest && latest.start === latest.end) {
+                        liveWorkerTaskMap.set(w, latest.id || (latest.startISO + '_' + latest.name));
+                    }
+                }
+            });
+        }
+
         categories.forEach(cat => {
             taskNames.forEach(n => {
                 const style = getStyle(n, cat.isPlan), allItems = [...prev[cat.key].map(t => ({...t, dayOff: -1})), ...day[cat.key].map(t => ({...t, dayOff: 0})), ...next[cat.key].map(t => ({...t, dayOff: 1}))].filter(t => t.name === n);
-                if (allItems.length > 0) { ds.push({ label: n + cat.labelSuffix, backgroundColor: style, barPercentage: cat.barPct, categoryPercentage: 0.8, grouped: false, data: allItems.map(t => { let s = getDecFromISO(t.startISO), e = getDecFromISO(t.endISO), isLive = false; if (isChartToday && !cat.isPlan && t.dayOff === 0 && t.start === t.end && nowDec > s) { e = nowDec; isLive = true; } if (e <= base || s >= end) return null; const isContinued = t.startISO < selectedDate + 'T00:00:00'; return { x: [s, e], y: t.worker.replace(/ \[.*?\]$/, ''), start: t.start, end: t.end, isLive: isLive, name: isContinued ? `(継) ${t.name}` : t.name }; }).filter(v => v !== null) }); }
+                if (allItems.length > 0) { 
+                    ds.push({ 
+                        label: n + cat.labelSuffix, 
+                        backgroundColor: style, 
+                        barPercentage: cat.barPct, 
+                        categoryPercentage: 0.8, 
+                        grouped: false, 
+                        data: allItems.map(t => { 
+                            let s = getDecFromISO(t.startISO), e = getDecFromISO(t.endISO), isLive = false; 
+                            const isWorkerLive = liveWorkerTaskMap.has(t.worker) && (
+                                (t.id && t.id === liveWorkerTaskMap.get(t.worker)) ||
+                                (t.startISO + '_' + t.name) === liveWorkerTaskMap.get(t.worker) ||
+                                (t.start === t.end && !day.tasks.some(other => other.worker === t.worker && other.startISO > t.startISO))
+                            );
+                            if (isChartToday && !cat.isPlan && t.dayOff === 0 && isWorkerLive && nowDec > s) { 
+                                e = nowDec; 
+                                isLive = true; 
+                            } 
+                            if (e <= base || s >= end) return null; 
+                            const isContinued = t.startISO < selectedDate + 'T00:00:00'; 
+                            return { x: [s, e], y: t.worker.replace(/ \[.*?\]$/, ''), start: t.start, end: t.end, isLive: isLive, name: isContinued ? `(継) ${t.name}` : t.name }; 
+                        }).filter(v => v !== null) 
+                    }); 
+                }
             });
         });
         const footprintPlugin = { id: 'footprintEffect', afterDatasetsDraw(chart) { const {ctx} = chart; const header = document.getElementById('main-header'); let deepColor = '#1e293b'; if (header.classList.contains('header-morning')) deepColor = '#022c22'; else if (header.classList.contains('header-day')) deepColor = '#082f49'; else if (header.classList.contains('header-evening')) deepColor = '#451a03'; else if (header.classList.contains('header-night')) deepColor = '#0f172a'; chart.data.datasets.forEach((dataset, datasetIndex) => { const meta = chart.getDatasetMeta(datasetIndex); meta.data.forEach((bar, index) => { const raw = dataset.data[index]; if (raw && raw.isLive) { const {x, y, height} = bar.getProps(['x', 'y', 'height'], true), walkCycle = (Date.now() / 600) % 3, drawFoot = (fx, fy, scale, isLeft) => { ctx.save(); ctx.translate(fx, fy); ctx.scale(scale, scale); if (isLeft) ctx.scale(-1, 1); ctx.globalAlpha = 0.9; ctx.fillStyle = deepColor; ctx.font = '24px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('👣', 0, 0); ctx.restore(); }, stepSpace = 24; for (let i=0; i<3; i++) { const stepX = x - (2-i) * stepSpace, yPos = (i === 0) ? y + height/2 : (i === 1) ? y : y - height/2; if (Math.floor(walkCycle) === i) { drawFoot(stepX, yPos + Math.sin(Date.now()/150)*4, 1.3, i % 2 !== 0); } } } }); }); } };

@@ -1,0 +1,13 @@
+{
+  "name": "kiseki-no-kizuna",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "build": "mkdir -p dist && cp -r actions.js analysis.js core.js firebase.json firestore.rules index.html kizuna-repository.js kizuna-resonance.js manifest.json miracle-particles.js src style.css sw.js tactile-ui.js dist/ 2>/dev/null || true",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
