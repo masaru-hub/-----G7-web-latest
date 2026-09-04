@@ -35,7 +35,7 @@ app.get('/api/firebase-config', (req, res) => {
   const apiKey = process.env.VITE_FIREBASE_API_KEY || 
                  process.env.FIREBASE_API_KEY || 
                  process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
-                 'AIzaSyDoUrqEBN4Njyg7HcsAXcXD6XQLa4CnpFA';
+                 '';
                  
   const config = {
     apiKey: apiKey,

@@ -16,6 +16,23 @@ import {
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 async function fetchFirebaseConfig() {
+    // 1. Firebase Hosting環境 (/__/firebase/init.json) からの安全な自動取得
+    try {
+        const hostingResponse = await fetch('/__/firebase/init.json');
+        if (hostingResponse.ok) {
+            const contentType = hostingResponse.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const hostingConfig = await hostingResponse.json();
+                if (hostingConfig && hostingConfig.apiKey) {
+                    return hostingConfig;
+                }
+            }
+        }
+    } catch (e) {
+        // Firebase Hosting外ではスキップ
+    }
+
+    // 2. ローカルサーバーAPI (/api/firebase-config) からの取得
     try {
         const response = await fetch('/api/firebase-config');
         if (response.ok) {
@@ -31,10 +48,10 @@ async function fetchFirebaseConfig() {
         console.warn("⚠️ Could not fetch /api/firebase-config:", e);
     }
 
-    // クライアント側環境変数フォールバック
+    // 3. クライアント側環境変数フォールバック
     const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
     return {
-        apiKey: env.VITE_FIREBASE_API_KEY || "AIzaSyDoUrqEBN4Njyg7HcsAXcXD6XQLa4CnpFA",
+        apiKey: env.VITE_FIREBASE_API_KEY || "",
         authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "kiseki-trial.firebaseapp.com",
         projectId: env.VITE_FIREBASE_PROJECT_ID || "kiseki-trial",
         storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "kiseki-trial.firebasestorage.app",
