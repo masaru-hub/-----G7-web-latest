@@ -19,9 +19,12 @@ async function fetchFirebaseConfig() {
     try {
         const response = await fetch('/api/firebase-config');
         if (response.ok) {
-            const serverConfig = await response.json();
-            if (serverConfig && serverConfig.apiKey) {
-                return serverConfig;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const serverConfig = await response.json();
+                if (serverConfig && serverConfig.apiKey) {
+                    return serverConfig;
+                }
             }
         }
     } catch (e) {
@@ -31,7 +34,7 @@ async function fetchFirebaseConfig() {
     // クライアント側環境変数フォールバック
     const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
     return {
-        apiKey: env.VITE_FIREBASE_API_KEY || "",
+        apiKey: env.VITE_FIREBASE_API_KEY || "AIzaSyDoUrqEBN4Njyg7HcsAXcXD6XQLa4CnpFA",
         authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "kiseki-trial.firebaseapp.com",
         projectId: env.VITE_FIREBASE_PROJECT_ID || "kiseki-trial",
         storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "kiseki-trial.firebasestorage.app",
